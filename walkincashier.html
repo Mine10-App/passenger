@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Count Report</title>
+<link rel="stylesheet" href="style/walkincashier.css">
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<!-- Firebase configs -->
+<script src="fireW.js"></script> <!-- shift / main DB -->
+<script src="fireC.js"></script> <!-- walkin payments / walkinDb -->
+<script src="Co.js"></script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1 id="companyName"></h1>
+    <h2>Cash Count Report</h2>
+    
+    <div class="info-bar">
+      <div class="info-item">
+        <span class="info-label">Cashier</span>
+        <span class="info-value" id="currentCashierInfo">Loading...</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Date</span>
+        <span class="info-value" id="currentDate">Loading...</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Shift</span>
+        <span class="info-value" id="currentShift">Loading...</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Status</span>
+        <span class="info-value">
+          <span id="shiftStatus" class="status-badge status-not-opened">Loading...</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cash-sections">
+    <div class="section">
+      <h3 class="section-header">MVR Cash</h3>
+      <div class="section-body">
+        <div class="denomination-grid" id="mvrDenominations">
+          <!-- MVR denominations will be inserted here by JavaScript -->
+        </div>
+        <div class="total-display">
+          <div class="total-item">
+            <span>Total Counted:</span>
+            <strong id="mvrTotal">0.00</strong> MVR
+          </div>
+          <div class="total-item">
+            <span>System Total:</span>
+            <strong id="sysMvr">0.00</strong> MVR
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-header">USD Cash</h3>
+      <div class="section-body">
+        <div class="denomination-grid" id="usdDenominations">
+          <!-- USD denominations will be inserted here by JavaScript -->
+        </div>
+        <div class="total-display">
+          <div class="total-item">
+            <span>Total Counted:</span>
+            <strong id="usdTotal">0.00</strong> USD
+          </div>
+          <div class="total-item">
+            <span>System Total:</span>
+            <strong id="sysUsd">0.00</strong> USD
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-header">Petty MVR</h3>
+      <div class="section-body">
+        <div class="denomination-grid" id="pettyMvrDenominations">
+          <!-- Petty MVR denominations will be inserted here by JavaScript -->
+        </div>
+        <div class="total-display">
+          <div class="total-item">
+            <span>Total Counted:</span>
+            <strong id="pettyMvrTotal">0.00</strong> MVR
+          </div>
+          <div class="total-item">
+            <span>Preset Amount:</span>
+            <strong id="pettyMvrPreset">500.00</strong> MVR
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-header">Petty USD</h3>
+      <div class="section-body">
+        <div class="denomination-grid" id="pettyUsdDenominations">
+          <!-- Petty USD denominations will be inserted here by JavaScript -->
+        </div>
+        <div class="total-display">
+          <div class="total-item">
+            <span>Total Counted:</span>
+            <strong id="pettyUsdTotal">0.00</strong> USD
+          </div>
+          <div class="total-item">
+            <span>Preset Amount:</span>
+            <strong id="pettyUsdPreset">100.00</strong> USD
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-section">
+    <h3 class="section-header">Summary</h3>
+    <div class="summary-grid">
+      <div class="summary-item" id="summaryMvr">
+        <span class="summary-label">MVR Cash</span>
+        <span class="summary-value"><span id="sumMvr">0.00</span> / <span id="sysMvr2">0.00</span></span>
+      </div>
+      <div class="summary-item" id="summaryUsd">
+        <span class="summary-label">USD Cash</span>
+        <span class="summary-value"><span id="sumUsd">0.00</span> / <span id="sysUsd2">0.00</span></span>
+      </div>
+      <div class="summary-item" id="summaryPettyMvr">
+        <span class="summary-label">Petty MVR</span>
+        <span class="summary-value"><span id="sumPettyMvr">0.00</span> / <span id="pettyMvrPreset2">500.00</span></span>
+      </div>
+      <div class="summary-item" id="summaryPettyUsd">
+        <span class="summary-label">Petty USD</span>
+        <span class="summary-value"><span id="sumPettyUsd">0.00</span> / <span id="pettyUsdPreset2">100.00</span></span>
+      </div>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn btn-secondary" id="saveCashCountBtn">
+        💾 Save Count
+      </button>
+      <button class="btn btn-success" id="openShiftBtn" disabled>
+        🔓 Open Cashier
+      </button>
+      <button class="btn btn-danger" id="closeShiftBtn" disabled>
+        🔒 Close Cashier
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="save-indicator" id="saveIndicator">
+  ✅ Data saved successfully!
+</div>
+
+<script src="JS/walkincashier.js"></script>
+</body>
+</html>
