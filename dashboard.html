@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Lounge - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d6eaf8 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: #d4af37;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #34495e;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: white;
+            color: #2c3e50;
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #d4af37;
+            text-align: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            background: #fffef7;
+        }
+
+        .btn i {
+            font-size: 1.3rem;
+            color: #d4af37;
+        }
+
+        .logout-btn {
+            border-left-color: #e74c3c;
+        }
+
+        .logout-btn i {
+            color: #e74c3c;
+        }
+
+        .firebase-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            background: #2ecc71;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .db-status {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        .db-indicator {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #2ecc71;
+            color: white;
+        }
+
+        .db-offline {
+            background: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .btn {
+                padding: 15px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .dashboard {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-crown"></i>
+                <h1>Business Lounge</h1>
+            </div>
+            <p class="subtitle">Passenger Management System</p>
+            <div class="user-info">
+                <div>John Doe | Administrator</div>
+            </div>
+            <div class="db-status">
+                <span class="db-indicator" id="cardDbStatus">Card DB: Connecting...</span>
+                <span class="db-indicator" id="walkinDbStatus">Walk-in DB: Connecting...</span>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <button class="btn" id="passenger-entry-btn">
+                <i class="fas fa-id-card"></i> Passenger Entry
+            </button>
+
+            <button class="btn" id="passenger-report-btn">
+                <i class="fas fa-clipboard-list"></i> Passenger Report
+            </button>
+
+            <button class="btn" id="payment-btn">
+                <i class="fas fa-money-bill-wave"></i> Payment
+            </button>
+
+            <button class="btn" id="payment-update-btn">
+                <i class="fas fa-edit"></i> Payment Update
+            </button>
+
+            <button class="btn" id="receipt-btn">
+                <i class="fas fa-receipt"></i> Receipt Print
+            </button>
+
+            <button class="btn" id="shift-btn">
+                <i class="fas fa-clock"></i> Shift
+            </button>
+
+            <button class="btn" id="cashier-btn">
+                <i class="fas fa-user-tie"></i> Cashier
+            </button>
+
+            <button class="btn logout-btn" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <div id="firebase-status" class="firebase-status">
+        <i class="fas fa-plug"></i> Firebase Connected
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    
+    <script src="fireC.js"></script>      <!-- main Shift DB -->
+    <script src="fireW.js"></script>      <!-- Walk-in Payments DB -->
+      
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update connection status
+            if (db && walkinDb) {
+                document.getElementById('cardDbStatus').textContent = "Card DB: Connected";
+                document.getElementById('walkinDbStatus').textContent = "Walk-in DB: Connected";
+                document.getElementById('firebase-status').innerHTML = '<i class="fas fa-plug"></i> Both DBs Connected';
+            } else if (db || walkinDb) {
+                document.getElementById('firebase-status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Partial Connection';
+                document.getElementById('firebase-status').style.background = '#f39c12';
+                
+                if (db) {
+                    document.getElementById('cardDbStatus').textContent = "Card DB: Connected";
+                } else {
+                    document.getElementById('cardDbStatus').textContent = "Card DB: Offline";
+                    document.getElementById('cardDbStatus').className = "db-indicator db-offline";
+                }
+                
+                if (walkinDb) {
+                    document.getElementById('walkinDbStatus').textContent = "Walk-in DB: Connected";
+                } else {
+                    document.getElementById('walkinDbStatus').textContent = "Walk-in DB: Offline";
+                    document.getElementById('walkinDbStatus').className = "db-indicator db-offline";
+                }
+            } else {
+                document.getElementById('firebase-status').innerHTML = '<i class="fas fa-times-circle"></i> Disconnected';
+                document.getElementById('firebase-status').style.background = '#e74c3c';
+                document.getElementById('cardDbStatus').textContent = "Card DB: Offline";
+                document.getElementById('cardDbStatus').className = "db-indicator db-offline";
+                document.getElementById('walkinDbStatus').textContent = "Walk-in DB: Offline";
+                document.getElementById('walkinDbStatus').className = "db-indicator db-offline";
+            }
+
+            // Make databases globally available (like in your WalkInPaymentApp)
+            window.db = db;
+            window.walkinDb = walkinDb;
+
+            // Simple button event listeners
+            document.getElementById('passenger-entry-btn').addEventListener('click', function() {
+                if (db) {
+                   // alert('Opening Passenger Entry...');
+                     window.location.href = 'cardentry.html';
+                } else {
+                    alert('Card database not available');
+                }
+            });
+            
+            document.getElementById('passenger-report-btn').addEventListener('click', function() {
+                if (db) {
+                   // alert('Opening Passenger Report...');
+                     window.location.href = 'updateCard.html';
+                } else {
+                    alert('Card database not available');
+                }
+            });
+            
+            document.getElementById('payment-btn').addEventListener('click', function() {
+                if (walkinDb) {
+                   // alert('Opening Payment...');
+                     window.location.href = 'walkin1.html';
+                } else {
+                    alert('Walk-in database not available');
+                }
+            });
+            
+            document.getElementById('payment-update-btn').addEventListener('click', function() {
+                if (walkinDb) {
+                   // alert('Opening Payment Update...');
+                     window.location.href = 'walkinedit.html';
+                } else {
+                    alert('Walk-in database not available');
+                }
+            });
+            
+            document.getElementById('receipt-btn').addEventListener('click', function() {
+                if (walkinDb) {
+                    alert('Opening Receipt Print...');
+                } else {
+                    alert('Walk-in database not available');
+                }
+            });
+            
+            document.getElementById('shift-btn').addEventListener('click', function() {
+                if (db) {
+                   // alert('Opening Shift Management...');
+                     window.location.href = 'shift.html';
+                } else {
+                    alert('Card database not available');
+                }
+            });
+            
+            document.getElementById('cashier-btn').addEventListener('click', function() {
+                if (db) {
+                  //  alert('Opening Cashier Management...');
+                     window.location.href = 'walkincashier.html';
+                } else {
+                    alert('Card database not available');
+                }
+            });
+            
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                if(confirm('Are you sure you want to logout?')) {
+                   // alert('Logging out...');
+                     window.location.href = 'login.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

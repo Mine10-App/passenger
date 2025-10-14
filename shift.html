@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shift Management</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="style/shift.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Shift Management</h1>
+      <p class="subtitle"></p>
+    </header>
+
+    <div class="shifts-container">
+      <!-- Morning Shift Card -->
+      <div class="shift-card">
+        <div class="shift-header">
+          <div class="shift-icon morning-icon">☀️</div>
+          <div>
+            <div class="shift-title">Morning Shift</div>
+            <div class="shift-subtitle"></div>
+          </div>
+        </div>
+        
+        <div id="shift1Status" class="loading">
+          <div class="loading-spinner"></div>
+          Loading Morning Shift...
+        </div>
+        
+        <div class="shift-details">
+          <div class="shift-time">
+            <span class="shift-time-label">Opened:</span>
+            <span id="shift1OpenedAt">-</span>
+          </div>
+          <div class="shift-time">
+            <span class="shift-time-label">Closed:</span>
+            <span id="shift1ClosedAt">-</span>
+          </div>
+        </div>
+        
+        <div class="shift-actions">
+          <button id="openShift1Btn" class="btn btn-open" style="display:none;">
+            <span>🔓</span> Open
+          </button>
+          <button id="closeShift1Btn" class="btn btn-close" style="display:none;">
+            <span>🔒</span> Close
+          </button>
+        </div>
+      </div>
+
+      <!-- Evening Shift Card -->
+      <div class="shift-card">
+        <div class="shift-header">
+          <div class="shift-icon evening-icon">🌙</div>
+          <div>
+            <div class="shift-title">Evening Shift</div>
+            <div class="shift-subtitle"></div>
+          </div>
+        </div>
+        
+        <div id="shift2Status" class="loading">
+          <div class="loading-spinner"></div>
+          Loading Evening Shift...
+        </div>
+        
+        <div class="shift-details">
+          <div class="shift-time">
+            <span class="shift-time-label">Opened:</span>
+            <span id="shift2OpenedAt">-</span>
+          </div>
+          <div class="shift-time">
+            <span class="shift-time-label">Closed:</span>
+            <span id="shift2ClosedAt">-</span>
+          </div>
+        </div>
+        
+        <div class="shift-actions">
+          <button id="openShift2Btn" class="btn btn-open" style="display:none;">
+            <span>🔓</span> Open
+          </button>
+          <button id="closeShift2Btn" class="btn btn-close" style="display:none;">
+            <span>🔒</span> Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Passenger Management System</p>
+    </div>
+  </div>
+
+  <!-- Notification System -->
+  <div id="notification" class="notification"></div>
+
+  <script src="fireC.js"></script>
+  <script src="JS/shift.js"></script>
+</body>
+</html>
