@@ -82,111 +82,41 @@ tr:hover { background: #fef8e7;}
 .empty-state { text-align: center; padding: 50px; color: #8a7c4a;}
 .empty-state i { font-size: 48px; margin-bottom: 15px; color: #e0d6b3;}
 .empty-state p { font-size: 18px;}
-
-/* Scrollable table for screen view */
-.table-container {
-  overflow-x: auto;
-  margin-top: 15px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-/* Print-specific styles */
+.table-container { overflow-x: auto; margin-top: 15px; border: 1px solid var(--border); border-radius: var(--radius);}
 @media print {
   body { background: white; padding: 0; margin: 0; }
   .container { max-width: 100%; margin: 0; padding: 0; }
   .header, .controls { display: none; }
-  .report-container { 
-    display: block !important; 
-    box-shadow: none; 
-    margin: 0; 
-    width: 100%; 
-    border: none; 
-    page-break-inside: avoid;
-  }
-  .report-header { 
-    background: white !important; 
-    color: black; 
-    border-bottom: 2px solid #000;
-    padding: 15px;
-  }
+  .report-container { display: block !important; box-shadow: none; margin: 0; width: 100%; border: none; page-break-inside: avoid;}
+  .report-header { background: white !important; color: black; border-bottom: 2px solid #000; padding: 15px;}
   .report-header h2 { color: black; font-size: 24px; }
   .report-header p { color: black; font-size: 14px; }
   .report-body { padding: 15px; }
   .report-section h3 { font-size: 18px; }
-  table { 
-    box-shadow: none; 
-    font-size: 10px; 
-    page-break-inside: auto;
-  }
+  table { box-shadow: none; font-size: 10px; page-break-inside: auto; }
   th, td { padding: 6px 8px; }
-  th { 
-    background: #f0f0f0 !important; 
-    -webkit-print-color-adjust: exact; 
-    color-adjust: exact; 
-    font-size: 10px;
-  }
-  .summary { 
-    background: #f0f0f0 !important; 
-    border-left: 4px solid #000 !important; 
-    padding: 8px 10px;
-    font-size: 11px;
-    margin-top: 20px;
-  }
-  .summary h3 { 
-    font-size: 14px; 
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-  }
-  .summary div { 
-    margin-bottom: 4px; 
-    padding: 3px 0;
-  }
+  th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; color-adjust: exact; font-size: 10px;}
+  .summary { background: #f0f0f0 !important; border-left: 4px solid #000 !important; padding: 8px 10px; font-size: 11px; margin-top: 20px;}
+  .summary h3 { font-size: 14px; margin-bottom: 8px; padding-bottom: 6px; }
+  .summary div { margin-bottom: 4px; padding: 3px 0;}
   .btn { display: none; }
-  
-  /* Hide passenger, seat, level and voided reason columns in print by default */
-  .passenger-col, .seat-col, .level-col, .voided-col {
-    display: none;
-  }
-  
-  /* Show voided column only if there are voided receipts */
-  .has-voided .voided-col {
-    display: table-cell;
-  }
-  
-  /* Adjust column widths for print */
-  table { 
-    width: 100%; 
-    table-layout: fixed;
-    word-wrap: break-word;
-  }
-  
-  /* Column widths for print (without passenger, seat, level, voided) */
-  th:nth-child(1), td:nth-child(1) { width: 10%; } /* Receipt No */
-  th:nth-child(2), td:nth-child(2) { width: 12%; } /* Flight */
-  th:nth-child(3), td:nth-child(3) { width: 8%; } /* Adults */
-  th:nth-child(4), td:nth-child(4) { width: 8%; } /* Kids */
-  th:nth-child(5), td:nth-child(5) { width: 12%; } /* Total */
-  th:nth-child(6), td:nth-child(6) { width: 15%; } /* Payment Type */
-  th:nth-child(7), td:nth-child(7) { width: 10%; } /* Currency */
-  th:nth-child(8), td:nth-child(8) { width: 12%; } /* Shift */
-  th:nth-child(9), td:nth-child(9) { width: 13%; } /* User */
-  
-  /* If voided column is shown, adjust widths */
-  .has-voided th:nth-child(9), .has-voided td:nth-child(9) { width: 10%; } /* User */
-  .has-voided th:nth-child(10), .has-voided td:nth-child(10) { width: 10%; } /* Voided Reason */
+  .passenger-col, .seat-col, .level-col, .voided-col { display: none; }
+  .has-voided .voided-col { display: table-cell; }
+  table { width: 100%; table-layout: fixed; word-wrap: break-word; }
+  th:nth-child(1), td:nth-child(1) { width: 10%; }
+  th:nth-child(2), td:nth-child(2) { width: 12%; }
+  th:nth-child(3), td:nth-child(3) { width: 8%; }
+  th:nth-child(4), td:nth-child(4) { width: 8%; }
+  th:nth-child(5), td:nth-child(5) { width: 12%; }
+  th:nth-child(6), td:nth-child(6) { width: 15%; }
+  th:nth-child(7), td:nth-child(7) { width: 10%; }
+  th:nth-child(8), td:nth-child(8) { width: 12%; }
+  th:nth-child(9), td:nth-child(9) { width: 13%; }
+  .has-voided th:nth-child(9), .has-voided td:nth-child(9) { width: 10%; }
+  .has-voided th:nth-child(10), .has-voided td:nth-child(10) { width: 10%; }
 }
-
-/* Screen-only elements */
-.screen-only {
-  display: block;
-}
-
-@media print {
-  .screen-only {
-    display: none;
-  }
-}
+.screen-only { display: block; }
+@media print { .screen-only { display: none; } }
 </style>
 </head>
 <body>
@@ -202,7 +132,6 @@ tr:hover { background: #fef8e7;}
       <label for="reportDate"><i class="fas fa-calendar-alt"></i> Select Date:</label>
       <input type="date" id="reportDate">
     </div>
-    
     <div class="date-control">
       <label for="shiftSelect"><i class="fas fa-clock"></i> Select Shift:</label>
       <select id="shiftSelect">
@@ -211,7 +140,6 @@ tr:hover { background: #fef8e7;}
         <option value="Evening">Evening</option>
       </select>
     </div>
-
     <button id="generateBtn" class="btn"><i class="fas fa-chart-line"></i> Generate Report</button>
     <button onclick="printReport()" class="btn btn-print"><i class="fas fa-print"></i> Print Report</button>
   </div>
@@ -256,14 +184,14 @@ tr:hover { background: #fef8e7;}
 
 <script src="Co.js"></script>
 <script>
-// Set company name from Co.js
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById("companyName").innerText = companyInfo.name || "Daily Sales Report";
 });
 </script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="fire2.js"></script>
+<script src="fireW.js"></script>
 
 <script>
 const reportDateInput = document.getElementById("reportDate");
@@ -276,7 +204,6 @@ const summaryDiv = document.getElementById("summaryDiv");
 const receiptsTableBody = document.querySelector("#receiptsTable tbody");
 const receiptsTable = document.getElementById("receiptsTable");
 
-// Set default date to today
 reportDateInput.value = new Date().toISOString().split('T')[0];
 
 generateBtn.addEventListener("click", async () => {
@@ -292,9 +219,9 @@ generateBtn.addEventListener("click", async () => {
   summaryDiv.innerHTML = '';
 
   try {
-    const snapshot = await db.collection("payments").get();
+    const snapshot = await walkinDb.collection("payments").get(); // ✅ Use walkinDb here
     receiptsTableBody.innerHTML = '';
-    let totals = {}; // paymentType + currency
+    let totals = {};
     let totalReceipts = 0;
     let totalAdults = 0;
     let totalKids = 0;
@@ -303,7 +230,6 @@ generateBtn.addEventListener("click", async () => {
 
     snapshot.docs.forEach(doc => {
       const data = doc.data();
-
       const date = data.date || '';
       const shift = data.shift || '';
       if(date !== selectedDate) return;
@@ -321,10 +247,7 @@ generateBtn.addEventListener("click", async () => {
       const voidedReason = data.voidReason || '';
 
       const tr = document.createElement("tr");
-      if(voidedReason) {
-        tr.classList.add("voided");
-        hasVoidedReceipts = true;
-      }
+      if(voidedReason) { tr.classList.add("voided"); hasVoidedReceipts = true; }
       tr.innerHTML = `
         <td>${data.receiptNo}</td>
         <td class="passenger-col">${passenger}</td>
@@ -342,7 +265,6 @@ generateBtn.addEventListener("click", async () => {
       `;
       receiptsTableBody.appendChild(tr);
 
-      // Only add to summary if not voided
       if(!voidedReason){
         const key = `${paymentType} (${currency})`;
         totals[key] = (totals[key] || 0) + total;
@@ -353,14 +275,9 @@ generateBtn.addEventListener("click", async () => {
       }
     });
 
-    // Add has-voided class to table if there are voided receipts
-    if (hasVoidedReceipts) {
-      receiptsTable.classList.add('has-voided');
-    } else {
-      receiptsTable.classList.remove('has-voided');
-    }
+    if (hasVoidedReceipts) receiptsTable.classList.add('has-voided'); 
+    else receiptsTable.classList.remove('has-voided');
 
-    // Build compact summary
     summaryDiv.innerHTML = `
       <h3>Summary (Active Receipts Only)</h3>
       <div><span>Total Receipts:</span><span>${totalReceipts}</span></div>
@@ -368,7 +285,6 @@ generateBtn.addEventListener("click", async () => {
       <div><span>Total Kids:</span><span>${totalKids}</span></div>
       <div><span>Overall Total Amount:</span><span>${totalAmount.toFixed(2)}</span></div>
     `;
-    
     for(const key in totals){
       summaryDiv.innerHTML += `<div><span>Total ${key}:</span><span>${totals[key].toFixed(2)}</span></div>`;
     }
@@ -384,7 +300,6 @@ generateBtn.addEventListener("click", async () => {
 });
 
 function printReport(){ 
-  // Ensure the report is visible before printing
   reportContainer.style.display = 'block';
   window.print(); 
 }
