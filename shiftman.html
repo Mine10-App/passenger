@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shift Management</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="fire.js"></script>
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --blue: #1E3A8A;
+      --light-blue: #3B82F6;
+      --white: #FFFFFF;
+      --light-gray: #F8FAFC;
+      --text: #334155;
+      --border: #E2E8F0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--light-gray);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      border-top: 4px solid var(--gold);
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 5px;
+      color: var(--blue);
+    }
+
+    .subtitle {
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .shifts-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .shifts-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .shift-card {
+      background: var(--white);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      border-top: 3px solid var(--gold);
+    }
+
+    .shift-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shift-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 1.2rem;
+    }
+
+    .morning-icon {
+      background: var(--gold);
+      color: var(--white);
+    }
+
+    .evening-icon {
+      background: var(--blue);
+      color: var(--white);
+    }
+
+    .shift-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--blue);
+    }
+
+    .shift-subtitle {
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .shift-status {
+      margin: 15px 0;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .status-open {
+      background-color: rgba(16, 185, 129, 0.1);
+      border: 1px solid #10B981;
+      color: #10B981;
+    }
+
+    .status-closed {
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid #EF4444;
+      color: #EF4444;
+    }
+
+    .status-waiting {
+      background-color: rgba(245, 158, 11, 0.1);
+      border: 1px solid #F59E0B;
+      color: #F59E0B;
+    }
+
+    .shift-details {
+      margin: 15px 0;
+      padding: 15px;
+      background: var(--light-gray);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .shift-time {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .shift-time-label {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .shift-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-open {
+      background: var(--gold);
+      color: var(--white);
+    }
+
+    .btn-close {
+      background: var(--blue);
+      color: var(--white);
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--text);
+    }
+
+    .loading-spinner {
+      border: 3px solid rgba(212, 175, 55, 0.3);
+      border-radius: 50%;
+      border-top: 3px solid var(--gold);
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 15px;
+      color: var(--text);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      background: #10B981;
+      border-left: 4px solid var(--gold);
+    }
+
+    .notification.error {
+      background: #EF4444;
+      border-left: 4px solid var(--gold);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Shift Management</h1>
+      <p class="subtitle"></p>
+    </header>
+
+    <div class="shifts-container">
+      <!-- Morning Shift Card -->
+      <div class="shift-card">
+        <div class="shift-header">
+          <div class="shift-icon morning-icon">☀️</div>
+          <div>
+            <div class="shift-title">Morning Shift</div>
+            <div class="shift-subtitle"></div>
+          </div>
+        </div>
+        
+        <div id="shift1Status" class="loading">
+          <div class="loading-spinner"></div>
+          Loading Morning Shift...
+        </div>
+        
+        <div class="shift-details">
+          <div class="shift-time">
+            <span class="shift-time-label">Opened:</span>
+            <span id="shift1OpenedAt">-</span>
+          </div>
+          <div class="shift-time">
+            <span class="shift-time-label">Closed:</span>
+            <span id="shift1ClosedAt">-</span>
+          </div>
+        </div>
+        
+        <div class="shift-actions">
+          <button id="openShift1Btn" class="btn btn-open" style="display:none;">
+            <span>🔓</span> Open
+          </button>
+          <button id="closeShift1Btn" class="btn btn-close" style="display:none;">
+            <span>🔒</span> Close
+          </button>
+        </div>
+      </div>
+
+      <!-- Evening Shift Card -->
+      <div class="shift-card">
+        <div class="shift-header">
+          <div class="shift-icon evening-icon">🌙</div>
+          <div>
+            <div class="shift-title">Evening Shift</div>
+            <div class="shift-subtitle"></div>
+          </div>
+        </div>
+        
+        <div id="shift2Status" class="loading">
+          <div class="loading-spinner"></div>
+          Loading Evening Shift...
+        </div>
+        
+        <div class="shift-details">
+          <div class="shift-time">
+            <span class="shift-time-label">Opened:</span>
+            <span id="shift2OpenedAt">-</span>
+          </div>
+          <div class="shift-time">
+            <span class="shift-time-label">Closed:</span>
+            <span id="shift2ClosedAt">-</span>
+          </div>
+        </div>
+        
+        <div class="shift-actions">
+          <button id="openShift2Btn" class="btn btn-open" style="display:none;">
+            <span>🔓</span> Open
+          </button>
+          <button id="closeShift2Btn" class="btn btn-close" style="display:none;">
+            <span>🔒</span> Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Shift Management System</p>
+    </div>
+  </div>
+
+  <!-- Notification System -->
+  <div id="notification" class="notification"></div>
+
+  <script>
+    let shiftDocId = null;
+
+    function formatDateTime(date) {
+      return `${date.toLocaleDateString()}, ${date.toLocaleTimeString()}`;
+    }
+
+    function getDateOnly(str) {
+      if (!str) return null;
+      return new Date(str.split(",")[0]);
+    }
+
+    function showNotification(message, type = 'success') {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = `notification ${type} show`;
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+
+    function updateStatusDisplay(shiftKey, status, openedAt, closedAt) {
+      const statusElement = document.getElementById(`${shiftKey}Status`);
+      const openedAtElement = document.getElementById(`${shiftKey}OpenedAt`);
+      const closedAtElement = document.getElementById(`${shiftKey}ClosedAt`);
+      
+      // Remove all status classes
+      statusElement.classList.remove('status-open', 'status-closed', 'status-waiting', 'loading');
+      
+      // Update status text and styling
+      if (status === 'Open') {
+        statusElement.textContent = `${shiftKey === 'shift1' ? '🌅 Morning' : '🌇 Evening'} Shift is OPEN`;
+        statusElement.classList.add('status-open');
+      } else if (status === 'Closed') {
+        statusElement.textContent = `${shiftKey === 'shift1' ? '🌅 Morning' : '🌇 Evening'} Shift is CLOSED`;
+        statusElement.classList.add('status-closed');
+      } else if (status === 'Waiting') {
+        statusElement.textContent = `${shiftKey === 'shift1' ? '🌅 Morning' : '🌇 Evening'} Shift is WAITING`;
+        statusElement.classList.add('status-waiting');
+      }
+      
+      // Update time displays
+      openedAtElement.textContent = openedAt || '-';
+      closedAtElement.textContent = closedAt || '-';
+    }
+
+    async function getShifts() {
+      const shift1Status = document.getElementById("shift1Status");
+      const shift2Status = document.getElementById("shift2Status");
+
+      const openShift1Btn = document.getElementById("openShift1Btn");
+      const closeShift1Btn = document.getElementById("closeShift1Btn");
+
+      const openShift2Btn = document.getElementById("openShift2Btn");
+      const closeShift2Btn = document.getElementById("closeShift2Btn");
+
+      try {
+        const snapshot = await db.collection("shifts").get();
+        if (snapshot.empty) {
+          shift1Status.textContent = "No shift data found.";
+          shift2Status.textContent = "No shift data found.";
+          return;
+        }
+
+        snapshot.forEach(async doc => {
+          shiftDocId = doc.id;
+          const data = doc.data();
+          const { shift1, shift2, date } = data;
+
+          const today = new Date();
+          const currentDate = new Date(today.toLocaleDateString());
+          const shift1CloseDate = getDateOnly(shift1?.closedAt);
+          const shift1OpenDate = getDateOnly(shift1?.openedAt);
+          const shift2CloseDate = getDateOnly(shift2?.closedAt);
+
+          // CASE 1: New day - shift1 should open
+          if (shift1CloseDate && currentDate > shift1CloseDate) {
+            await db.collection("shifts").doc(shiftDocId).update({
+              date: today.toLocaleDateString(),
+              "shift1.status": "Closed",
+              "shift1.openedAt": "",
+              "shift1.closedAt": "",
+              "shift2.status": "Closed",
+              "shift2.openedAt": "",
+              "shift2.closedAt": ""
+            });
+            return getShifts();
+          }
+
+          // CASE 2: shift1 open > close → must close first
+          if (shift1?.status === "Open" && shift1OpenDate > shift1CloseDate) {
+            updateStatusDisplay('shift1', 'Open', shift1.openedAt, shift1.closedAt);
+            openShift1Btn.style.display = "none";
+            closeShift1Btn.style.display = "flex";
+
+            updateStatusDisplay('shift2', 'Waiting');
+            openShift2Btn.style.display = "none";
+            closeShift2Btn.style.display = "none";
+            return;
+          }
+
+          // CASE 3: shift1 closed and same day → shift2 can open
+          if (shift1?.status === "Closed" && shift1CloseDate?.toDateString() === currentDate.toDateString()) {
+            updateStatusDisplay('shift1', 'Closed', shift1.openedAt, shift1.closedAt);
+            openShift1Btn.style.display = "none";
+            closeShift1Btn.style.display = "none";
+
+            if (shift2?.status === "Open") {
+              updateStatusDisplay('shift2', 'Open', shift2.openedAt, shift2.closedAt);
+              openShift2Btn.style.display = "none";
+              closeShift2Btn.style.display = "flex";
+            } else {
+              updateStatusDisplay('shift2', 'Closed', shift2.openedAt, shift2.closedAt);
+              openShift2Btn.style.display = "flex";
+              closeShift2Btn.style.display = "none";
+            }
+            return;
+          }
+
+          // CASE 4: both shifts closed and today → next day setup
+          if (
+            shift1?.status === "Closed" &&
+            shift2?.status === "Closed" &&
+            shift1CloseDate?.toDateString() === currentDate.toDateString() &&
+            shift2CloseDate?.toDateString() === currentDate.toDateString()
+          ) {
+            const nextDate = new Date(currentDate);
+            nextDate.setDate(currentDate.getDate() + 1);
+            await db.collection("shifts").doc(shiftDocId).update({
+              date: nextDate.toLocaleDateString(),
+              "shift1.status": "Closed",
+              "shift2.status": "Closed"
+            });
+            return getShifts();
+          }
+
+          // Normal display logic
+          if (shift1?.status === "Open") {
+            updateStatusDisplay('shift1', 'Open', shift1.openedAt, shift1.closedAt);
+            openShift1Btn.style.display = "none";
+            closeShift1Btn.style.display = "flex";
+
+            updateStatusDisplay('shift2', 'Waiting');
+            openShift2Btn.style.display = "none";
+            closeShift2Btn.style.display = "none";
+          } else {
+            updateStatusDisplay('shift1', 'Closed', shift1.openedAt, shift1.closedAt);
+            openShift1Btn.style.display = "flex";
+            closeShift1Btn.style.display = "none";
+
+            updateStatusDisplay('shift2', 'Closed', shift2.openedAt, shift2.closedAt);
+            openShift2Btn.style.display = "none";
+            closeShift2Btn.style.display = "none";
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching shifts:", error);
+        showNotification('Error loading shift data', 'error');
+      }
+    }
+
+    async function openShift(shiftKey) {
+      if (!shiftDocId) {
+        showNotification('No shift document found', 'error');
+        return;
+      }
+      
+      const now = new Date();
+      const openedAt = formatDateTime(now);
+
+      await db.collection("shifts").doc(shiftDocId).update({
+        [`${shiftKey}.status`]: "Open",
+        [`${shiftKey}.openedAt`]: openedAt,
+        [`${shiftKey}.closedAt`]: ""
+      });
+      showNotification(`${shiftKey === "shift1" ? "Morning" : "Evening"} shift opened!`);
+      getShifts();
+    }
+
+    async function closeShift(shiftKey) {
+      if (!shiftDocId) {
+        showNotification('No shift document found', 'error');
+        return;
+      }
+      
+      const now = new Date();
+      const closedAt = formatDateTime(now);
+
+      await db.collection("shifts").doc(shiftDocId).update({
+        [`${shiftKey}.status`]: "Closed",
+        [`${shiftKey}.closedAt`]: closedAt
+      });
+      showNotification(`${shiftKey === "shift1" ? "Morning" : "Evening"} shift closed!`);
+      getShifts();
+    }
+
+    // Initialize event listeners
+    document.getElementById("openShift1Btn").addEventListener("click", () => openShift("shift1"));
+    document.getElementById("closeShift1Btn").addEventListener("click", () => closeShift("shift1"));
+    document.getElementById("openShift2Btn").addEventListener("click", () => openShift("shift2"));
+    document.getElementById("closeShift2Btn").addEventListener("click", () => closeShift("shift2"));
+
+    // Initialize the app
+    getShifts();
+  </script>
+</body>
+</html>
