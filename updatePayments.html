@@ -296,9 +296,12 @@ button {
 
 <div id="notification"></div>
 
+
+
 <script>
 const tbody = document.getElementById("transactionBody");
 const notification = document.getElementById("notification");
+const db = window.walkinDb; // use walkinDb from fireW.js
 
 function showNotification(message) {
   notification.textContent = message;
@@ -353,7 +356,6 @@ async function fetchTransactions() {
 
       tr.querySelector(".paymentType").value = data.paymentType || "Card";
 
-      // Update & Print button → redirect to receipt.html
       tr.querySelector(".updateBtn").addEventListener("click", async () => {
         const newPaymentType = tr.querySelector(".paymentType").value;
         const newApprovalCode = tr.querySelector(".approvalCode").value || null;
@@ -367,21 +369,14 @@ async function fetchTransactions() {
           });
 
           showNotification(`Transaction ${data.receiptNo} updated! Redirecting to receipt...`);
-
-          // Save receiptNo in sessionStorage for receipt.html
           sessionStorage.setItem('lastReceiptNo', data.receiptNo);
-
-          setTimeout(() => {
-            window.location.href = 'receipt.html';
-          }, 1200);
-
+          setTimeout(() => { window.location.href = 'receipt.html'; }, 1200);
         } catch(err) {
           console.error("Update failed:", err);
           alert("Failed to update transaction. Check console for details.");
         }
       });
 
-      // Update Only button → update without printing
       tr.querySelector(".cancelBtn").addEventListener("click", async () => {
         const newPaymentType = tr.querySelector(".paymentType").value;
         const newApprovalCode = tr.querySelector(".approvalCode").value || null;
@@ -395,8 +390,7 @@ async function fetchTransactions() {
           });
 
           showNotification(`Transaction ${data.receiptNo} updated successfully!`);
-          fetchTransactions(); // refresh table
-
+          fetchTransactions();
         } catch(err) {
           console.error("Update failed:", err);
           alert("Failed to update transaction. Check console for details.");
@@ -415,5 +409,6 @@ async function fetchTransactions() {
 // Initial fetch
 fetchTransactions();
 </script>
+
 </body>
 </html>
