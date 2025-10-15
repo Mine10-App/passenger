@@ -1,57 +1,55 @@
-// JS/cardentry.js
-class PassengerApprovalSystem {
+class WalkInPaymentApp {
     constructor() {
         this.initializeElements();
-        this.currentShift = "Morning"; // Default shift
+        this.currentShiftLabel = "No Shift Open";
+        this.shiftData = null;
+        this.cashierName = "Cashier";
         this.isSaving = false;
-        this.pendingPassengers = [];
         this.initializeApp();
     }
 
     initializeElements() {
-        // Form elements
-        this.passengerForm = document.getElementById('passengerForm');
-        this.qrInput = document.getElementById('qrInput');
-        this.nameInput = document.getElementById('name');
-        this.seatNoInput = document.getElementById('seatNo');
-        this.flightNoInput = document.getElementById('flightNo');
-        this.airlineInput = document.getElementById('airline');
-        this.dateInput = document.getElementById('date');
-        this.numPaxInput = document.getElementById('numPax');
-        this.fqtvInput = document.getElementById('fqtv');
-        this.serialInput = document.getElementById('serial');
-        this.remarksInput = document.getElementById('remarks');
-        
-        // Action buttons
-        this.addPassengerBtn = document.getElementById('addPassengerBtn');
+        this.adultsInput = document.getElementById('adults');
+        this.kidsInput = document.getElementById('kids');
+        this.currencyInput = document.getElementById('currency');
+        this.paymentTypeInput = document.getElementById('paymentType');
+        this.paidInput = document.getElementById('paid');
+        this.balanceInput = document.getElementById('balance');
+        this.qrInput = document.getElementById('qrCode');
+        this.nameField = document.getElementById('passengerName');
+        this.flightField = document.getElementById('flightNo');
+        this.seatField = document.getElementById('seatNo');
+        this.airlineField = document.getElementById('airline');
+        this.rateTypeInput = document.getElementById('rateType');
+
+        this.receiptNoHeader = document.getElementById('receiptNoHeader');
+        this.shiftNameHeader = document.getElementById('shiftNameHeader');
+        this.currentDateHeader = document.getElementById('currentDateHeader');
+        this.currentCashier = document.getElementById('currentcashier');
+
+        this.cashFieldsDiv = document.getElementById('cashFields');
+        this.saveBtn = document.getElementById('saveBtn');
         this.clearBtn = document.getElementById('clearBtn');
-        
-        // Table elements
-        this.tableBody = document.getElementById('tableBody');
-        this.emptyState = document.getElementById('emptyState');
-        this.paxCount = document.getElementById('paxCount');
-        
-        // Shift elements
-        this.shiftStatus = document.getElementById('shiftStatus');
-        this.shiftName = document.getElementById('shiftName');
-        this.shiftTime = document.getElementById('shiftTime');
-        
-        // Navigation buttons
-        this.dashboardBtn = document.getElementById('dashboardBtn');
-        this.reportBtn = document.getElementById('reportBtn');
-        
-        // Notification
-        this.notification = document.getElementById('notification');
+
+        this.adultsAmount = document.getElementById('adultsAmount');
+        this.kidsAmount = document.getElementById('kidsAmount');
+        this.subtotalAmount = document.getElementById('subtotalAmount');
+        this.gstAmount = document.getElementById('gstAmount');
+        this.grandTotalAmount = document.getElementById('grandTotalAmount');
+        this.grandTotalDisplay = document.getElementById('grandTotalDisplay');
+        this.totalPaxPreview = document.getElementById('totalPaxPreview');
+        this.adultsCount = document.getElementById('adultsCount');
+        this.kidsCount = document.getElementById('kidsCount');
     }
 
     async initializeApp() {
         this.initializeUser();
-        this.setCurrentDate();
+        this.updateCurrentDate();
+        this.togglePaymentFields();
         await this.fetchCurrentShift();
         this.initializeEventListeners();
-        await this.loadPendingApprovals();
-        
-        // Focus on QR input
+        this.calculate();
+
         setTimeout(() => {
             if (this.qrInput) this.qrInput.focus();
         }, 500);
@@ -59,15 +57,27 @@ class PassengerApprovalSystem {
 
     initializeUser() {
         const userData = JSON.parse(localStorage.getItem("loggedInUser"));
-        if (!userData) {
+        if (userData) {
+            this.cashierName = userData.name || userData.username;
+            if (this.currentCashier) this.currentCashier.textContent = this.cashierName;
+        } else {
             window.location.href = "login.html";
         }
     }
 
-    setCurrentDate() {
-        const today = new Date().toISOString().split('T')[0];
-        if (this.dateInput) {
-            this.dateInput.value = today;
+    updateCurrentDate() {
+        const now = new Date();
+        if (this.currentDateHeader) this.currentDateHeader.textContent = now.toLocaleDateString();
+    }
+
+    togglePaymentFields() {
+        if (!this.paymentTypeInput || !this.cashFieldsDiv) return;
+        const isCard = this.paymentTypeInput.value === "Card";
+        this.cashFieldsDiv.style.display = isCard ? "none" : "block";
+        if (isCard) {
+            const totals = this.calculate();
+            if (totals && this.paidInput) this.paidInput.value = totals.grandTotal.toFixed(2);
+            if (this.balanceInput) this.balanceInput.value = "0.00";
         }
     }
 
@@ -78,12 +88,12 @@ class PassengerApprovalSystem {
 
         if (code.startsWith("TKVCPO")) {
             const tkIndex = code.indexOf("TK0");
-            if (tkIndex !== -1) {
+            if (tkIndex != -1) {
                 flightNo = code.substring(tkIndex, tkIndex + 6);
                 name = code.substring(6, tkIndex).trim();
             }
             const mlePos = code.indexOf("MLE");
-            if (mlePos !== -1) {
+            if (mlePos != -1) {
                 const afterMLE = code.substring(mlePos).split(' ')[0];
                 if (afterMLE.length >= 11) seatNo = afterMLE.substring(8, 11);
             }
@@ -98,7 +108,7 @@ class PassengerApprovalSystem {
             }
             if (name.length > 6) name = name.substring(0, name.length - 6).trim();
 
-            if (mleIndex !== -1) {
+            if (mleIndex != -1) {
                 const mleWord = allParts[mleIndex];
                 const nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
                 flightNo = mleWord.slice(-2) + nextWord;
@@ -118,382 +128,262 @@ class PassengerApprovalSystem {
         if (!flightNo || flightNo.length < 2) return "Unknown";
         const code = flightNo.substring(0, 2).toUpperCase();
         const iata = {
-            "GF": "GULF AIR",
-            "BA": "British Airways",
-            "TK": "Turkish Airlines",
-            "QR": "Qatar Airways",
-            "EK": "Emirates",
-            "EY": "Etihad Airways",
-            "LH": "Lufthansa",
-            "AF": "Air France",
-            "KL": "KLM",
-            "AA": "American Airlines",
-            "UA": "United Airlines",
-            "DL": "Delta Air Lines",
-            "SQ": "Singapore Airlines",
-            "CX": "Cathay Pacific",
-            "NH": "All Nippon Airways",
-            "JL": "Japan Airlines",
-            "KE": "Korean Air",
-            "PG": "Bangkok Airways",
-            "TG": "Thai Airways",
-            "MH": "Malaysia Airlines",
-            "GA": "Garuda Indonesia",
-            "QF": "Qantas",
-            "NZ": "Air New Zealand",
-            "AC": "Air Canada",
-            "LX": "Swiss International Air Lines",
-            "OS": "Austrian Airlines",
-            "SN": "Brussels Airlines",
-            "SK": "SAS Scandinavian Airlines",
-            "AY": "Finnair",
-            "LO": "LOT Polish Airlines",
-            "SU": "Aeroflot",
-            "AZ": "Alitalia",
-            "IB": "Iberia",
-            "Q2": "Maldivian",
-            "SV": "Saudia",
-            "ET": "Ethiopian Airlines",
-            "MS": "EgyptAir",
-            "RJ": "Royal Jordanian",
-            "OD": "Batik Air",
-            "JD": "Beijing Capital Airlines",
-            "UL": "Srilankan Airlines"
+            "BA":"British Airways","TK":"Turkish Airlines","QR":"Qatar Airways",
+            "EK":"Emirates","EY":"Etihad Airways","LH":"Lufthansa",
+            "AF":"Air France","KL":"KLM","AA":"American Airlines",
+            "UA":"United Airlines","DL":"Delta Air Lines","SQ":"Singapore Airlines",
+            "CX":"Cathay Pacific","NH":"All Nippon Airways","JL":"Japan Airlines",
+            "KE":"Korean Air","PG":"Bangkok Airways","TG":"Thai Airways",
+            "MH":"Malaysia Airlines","GA":"Garuda Indonesia","QF":"Qantas",
+            "NZ":"Air New Zealand","AC":"Air Canada","LX":"Swiss International Air Lines",
+            "OS":"Austrian Airlines","SN":"Brussels Airlines","SK":"SAS Scandinavian Airlines",
+            "AY":"Finnair","LO":"LOT Polish Airlines","SU":"Aeroflot",
+            "AZ":"Alitalia","IB":"Iberia","Q2":"Maldivian","SV":"Saudia",
+            "ET":"Ethiopian Airlines","MS":"EgyptAir","RJ":"Royal Jordanian",
+            "OD":"Batik Air","JD":"Beijing Capital Airlines","UL":"Srilankan Airlines"
         };
         return iata[code] || "Unknown";
     }
 
     async fetchCurrentShift() {
         try {
-            if (!db) {
-                this.updateShiftInfo(null);
-                return;
-            }
-            
+            if (!db) { this.updateShiftInfo(null); return; }
             const snapshot = await db.collection("shifts").limit(1).get();
-            const shiftData = !snapshot.empty ? snapshot.docs[0].data() : null;
-            this.updateShiftInfo(shiftData);
-        } catch (error) {
-            console.error("Error fetching shift:", error);
+            this.updateShiftInfo(!snapshot.empty ? snapshot.docs[0].data() : null);
+        } catch {
             this.updateShiftInfo(null);
         }
     }
 
-    updateShiftInfo(shiftData) {
-        let shiftName = "No Shift Open";
-        let shiftTime = "";
-        
-        if (shiftData) {
-            if (shiftData.shift1?.status === "Open") {
-                shiftName = "Morning Shift";
-                this.currentShift = "Morning";
-                shiftTime = shiftData.shift1.time || "";
-            } else if (shiftData.shift2?.status === "Open") {
-                shiftName = "Evening Shift";
-                this.currentShift = "Evening";
-                shiftTime = shiftData.shift2.time || "";
-            }
-        }
-        
-        if (this.shiftName) this.shiftName.textContent = shiftName;
-        if (this.shiftTime) this.shiftTime.textContent = shiftTime;
+    updateShiftInfo(data) {
+        if (!data) this.currentShiftLabel = "No Shift Open";
+        else if (data.shift1?.status === "Open") this.currentShiftLabel = "Morning Shift";
+        else if (data.shift2?.status === "Open") this.currentShiftLabel = "Evening Shift";
+        else this.currentShiftLabel = "No Shift Open";
+        if (this.shiftNameHeader) this.shiftNameHeader.textContent = this.currentShiftLabel;
     }
 
-    async savePassenger(passengerData) {
+    calculate() {
+        try {
+            const adults = parseInt(this.adultsInput.value) || 0;
+            const kids = parseInt(this.kidsInput.value) || 0;
+            const currency = this.currencyInput.value;
+            const rateType = this.rateTypeInput.value;
+            const paid = parseFloat(this.paidInput.value) || 0;
+            this.updatePassengerCounts(adults, kids);
+            if (typeof rates === 'undefined') return null;
+            const adultRate = rates[`Adult${rateType}${currency}`];
+            const kidsRate = rates[`Kids${rateType}${currency}`];
+            if (!adultRate || !kidsRate) return null;
+            const adultsTotal = adults * adultRate.price;
+            const kidsTotal = kids * kidsRate.price;
+            const subtotal = adultsTotal + kidsTotal;
+            const gst = subtotal * (adultRate.GST / 100);
+            const grandTotal = subtotal + gst;
+            const balance = this.paymentTypeInput.value === "Card" ? 0 : paid - grandTotal;
+            if (this.balanceInput) this.balanceInput.value = balance.toFixed(2);
+            this.updateSummaryDisplay(adults, kids, adultsTotal, kidsTotal, subtotal, gst, grandTotal, currency);
+            return { adultsTotal, kidsTotal, subtotal, gst, grandTotal };
+        } catch { return null; }
+    }
+
+    updatePassengerCounts(adults, kids) {
+        const totalPax = adults + kids;
+        if (this.totalPaxPreview) this.totalPaxPreview.textContent = totalPax;
+        if (this.adultsCount) this.adultsCount.textContent = adults;
+        if (this.kidsCount) this.kidsCount.textContent = kids;
+    }
+
+    updateSummaryDisplay(adults, kids, adultsTotal, kidsTotal, subtotal, gst, grandTotal, currency) {
+        const symbol = currency === 'USD' ? '$' : 'ރ';
+        if (this.adultsAmount) this.adultsAmount.textContent = `${symbol}${adultsTotal.toFixed(2)}`;
+        if (this.kidsAmount) this.kidsAmount.textContent = `${symbol}${kidsTotal.toFixed(2)}`;
+        if (this.subtotalAmount) this.subtotalAmount.textContent = `${symbol}${subtotal.toFixed(2)}`;
+        if (this.gstAmount) this.gstAmount.textContent = `${symbol}${gst.toFixed(2)}`;
+        if (this.grandTotalAmount) this.grandTotalAmount.textContent = `${symbol}${grandTotal.toFixed(2)}`;
+        if (this.grandTotalDisplay) this.grandTotalDisplay.textContent = `${symbol}${grandTotal.toFixed(2)} ${currency}`;
+    }
+
+    updateReceiptDisplay(receiptNo) {
+        if (this.receiptNoHeader) this.receiptNoHeader.textContent = receiptNo;
+    }
+
+    generateThermalReceipt(paymentData) {
+        const now = new Date();
+        const symbol = paymentData.currency === 'USD' ? '$' : 'ރ';
+        return `
+        <div id="thermalReceipt" style="width:64mm;font-family:'Courier New',monospace;font-size:12px;line-height:1.2;padding:5px;background:white;color:black;">
+            <div style="text-align:center;font-weight:bold;font-size:14px;margin-bottom:5px;">KOVELI LOUNGE</div>
+            <div style="text-align:center;font-size:10px;margin-bottom:5px;">Velana International Airport</div>
+            <div style="text-align:center;font-size:10px;margin-bottom:8px;">Tel: +960 304 6677</div>
+            <hr style="border:1px dashed #000;margin:5px 0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <span>Receipt: #${paymentData.receiptNo}</span>
+                <span>${now.toLocaleDateString()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <span>${now.toLocaleTimeString()}</span>
+                <span>${this.cashierName}</span>
+            </div>
+            <hr style="border:0.5px solid #000;margin:5px 0;">
+            <div style="margin-bottom:3px;"><strong>Passenger:</strong> ${paymentData.name}</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <span><strong>Flight:</strong> ${paymentData.flightNo}</span>
+                <span><strong>Seat:</strong> ${paymentData.seatNo || '-'}</span>
+            </div>
+            <div style="margin-bottom:5px;"><strong>Airline:</strong> ${paymentData.airline}</div>
+            <hr style="border:0.5px solid #000;margin:5px 0;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span>Adults (${paymentData.adults}):</span>
+                <span>${symbol}${(paymentData.adultsTotal || 0).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span>Kids (${paymentData.kids}):</span>
+                <span>${symbol}${(paymentData.kidsTotal || 0).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span>Subtotal:</span>
+                <span>${symbol}${(paymentData.subtotal || 0).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span>GST:</span>
+                <span>${symbol}${(paymentData.gst || 0).toFixed(2)}</span>
+            </div>
+            <hr style="border:0.5px solid #000;margin:5px 0;">
+            <div style="display:flex;justify-content:space-between;font-weight:bold;margin-bottom:3px;">
+                <span>TOTAL:</span>
+                <span>${symbol}${(paymentData.grandTotal || 0).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                <span>Paid:</span>
+                <span>${symbol}${(paymentData.paid || 0).toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span>Balance:</span>
+                <span>${symbol}${(paymentData.balance || 0).toFixed(2)}</span>
+            </div>
+            <div style="margin-bottom:3px;"><strong>Payment:</strong> ${paymentData.paymentType}</div>
+            <hr style="border:1px dashed #000;margin:8px 0 5px 0;">
+            <div style="text-align:center;font-size:10px;margin-bottom:5px;">Thank you for your business!</div>
+            <div style="text-align:center;font-size:9px;">${now.toLocaleString()}</div>
+        </div>
+        `;
+    }
+
+    printReceipt(receiptContent) {
+        try {
+            const printWindow = window.open('', '_blank', 'width=64mm,height=400,scrollbars=no,menubar=no,toolbar=no');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Receipt</title>
+                    <style>body{margin:0;padding:0;background:white}@media print{body{margin:0;padding:0}@page{margin:0;size:64mm auto}}</style>
+                </head>
+                <body onload="window.print();setTimeout(()=>window.close(),500);">${receiptContent}</body>
+                </html>`);
+            printWindow.document.close();
+        } catch {
+            alert("Could not open print window. Check popup blocker.");
+        }
+    }
+
+    async savePayment() {
         if (this.isSaving) return;
         this.isSaving = true;
 
+        if (!this.nameField.value.trim()) { alert("Enter passenger name"); this.nameField.focus(); this.isSaving=false; return; }
+        if (!this.flightField.value.trim()) { alert("Enter flight number"); this.flightField.focus(); this.isSaving=false; return; }
+
+        const totals = this.calculate();
+        if (!totals) { alert("Error in calculation. Check rates."); this.isSaving=false; return; }
+
         try {
-            // Save to Firebase in the exact format you specified
-            const passengerDoc = {
-                airline: passengerData.airline,
-                approved: false, // Default to false for pending approvals
-                checkinTime: "", // Empty string as per your format
-                date: passengerData.date,
-                flightNo: passengerData.flightNo,
-                fqtv: passengerData.fqtv || "-",
-                name: passengerData.name,
-                numPax: passengerData.numPax,
-                remarks: passengerData.remarks || "",
-                seatNo: passengerData.seatNo,
-                serial: passengerData.serial || "-",
-                shift: this.currentShift,
-                timeAdded: this.getCurrentTime()
+            let lastPaymentSnapshot = await walkinDb.collection("payments").orderBy("receiptNo","desc").limit(1).get();
+            let nextReceiptNo = lastPaymentSnapshot.empty ? 1 : lastPaymentSnapshot.docs[0].data().receiptNo + 1;
+
+            const paymentData = {
+                receiptNo: nextReceiptNo,
+                date: new Date().toISOString(),
+                cashier: this.cashierName,
+                shift: this.currentShiftLabel,
+                rateType: this.rateTypeInput.value,
+                name: this.nameField.value.trim(),
+                flightNo: this.flightField.value.trim(),
+                seatNo: this.seatField.value.trim(),
+                airline: this.airlineField.value || "Unknown",
+                adults: parseInt(this.adultsInput.value)||0,
+                kids: parseInt(this.kidsInput.value)||0,
+                currency: this.currencyInput.value,
+                paymentType: this.paymentTypeInput.value,
+                paid: parseFloat(this.paidInput.value)||0,
+                balance: parseFloat(this.balanceInput.value)||0,
+                subtotal: totals.subtotal,
+                gst: totals.gst,
+                grandTotal: totals.grandTotal,
+                adultsTotal: totals.adultsTotal,
+                kidsTotal: totals.kidsTotal
             };
 
-            // Add to Firebase
-            await db.collection("passengers").add(passengerDoc);
-            
-            this.showNotification("Passenger added successfully!", "success");
-            await this.loadPendingApprovals(); // Refresh the table
+            await walkinDb.collection("payments").doc(nextReceiptNo.toString()).set(paymentData);
+            this.updateReceiptDisplay(nextReceiptNo);
+            this.printReceipt(this.generateThermalReceipt(paymentData));
             this.clearForm();
 
         } catch (error) {
-            console.error("Error saving passenger:", error);
-            this.showNotification("Error saving passenger. Please try again.", "error");
+            console.error("Firebase save error:", error);
+            alert("Error saving payment. Check console for details.");
         } finally {
             this.isSaving = false;
         }
     }
 
-    async loadPendingApprovals() {
-        try {
-            if (!db) return;
-
-            const snapshot = await db.collection("passengers")
-                .where("approved", "==", false)
-                .orderBy("timeAdded", "desc")
-                .get();
-
-            this.pendingPassengers = [];
-            snapshot.forEach(doc => {
-                this.pendingPassengers.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-
-            this.updateTable();
-            this.updatePassengerCount();
-
-        } catch (error) {
-            console.error("Error loading pending approvals:", error);
-            this.showNotification("Error loading pending approvals", "error");
-        }
-    }
-
-    updateTable() {
-        if (!this.tableBody) return;
-
-        this.tableBody.innerHTML = '';
-
-        if (this.pendingPassengers.length === 0) {
-            if (this.emptyState) this.emptyState.style.display = 'block';
-            return;
-        }
-
-        if (this.emptyState) this.emptyState.style.display = 'none';
-
-        this.pendingPassengers.forEach(passenger => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
-                <td>${passenger.date}</td>
-                <td>${passenger.airline}</td>
-                <td>${passenger.flightNo}</td>
-                <td>${passenger.name}</td>
-                <td>${passenger.seatNo}</td>
-                <td>${passenger.fqtv}</td>
-                <td>${passenger.serial}</td>
-                <td>${passenger.remarks}</td>
-                <td>${passenger.numPax}</td>
-                <td>${passenger.timeAdded}</td>
-                <td><span class="status-badge pending">Pending</span></td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-approve" data-id="${passenger.id}">Approve</button>
-                        <button class="btn-reject" data-id="${passenger.id}">Reject</button>
-                    </div>
-                </td>
-            `;
-
-            this.tableBody.appendChild(row);
-        });
-
-        // Add event listeners to action buttons
-        this.initializeTableEventListeners();
-    }
-
-    initializeTableEventListeners() {
-        // Approve buttons
-        document.querySelectorAll('.btn-approve').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const passengerId = e.target.getAttribute('data-id');
-                this.approvePassenger(passengerId);
-            });
-        });
-
-        // Reject buttons
-        document.querySelectorAll('.btn-reject').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const passengerId = e.target.getAttribute('data-id');
-                this.rejectPassenger(passengerId);
-            });
-        });
-    }
-
-    async approvePassenger(passengerId) {
-        if (!confirm("Are you sure you want to approve this passenger?")) return;
-
-        try {
-            await db.collection("passengers").doc(passengerId).update({
-                approved: true,
-                checkinTime: this.getCurrentTime()
-            });
-
-            this.showNotification("Passenger approved successfully!", "success");
-            await this.loadPendingApprovals(); // Refresh table
-
-        } catch (error) {
-            console.error("Error approving passenger:", error);
-            this.showNotification("Error approving passenger", "error");
-        }
-    }
-
-    async rejectPassenger(passengerId) {
-        if (!confirm("Are you sure you want to reject this passenger?")) return;
-
-        try {
-            await db.collection("passengers").doc(passengerId).delete();
-            this.showNotification("Passenger rejected successfully!", "success");
-            await this.loadPendingApprovals(); // Refresh table
-
-        } catch (error) {
-            console.error("Error rejecting passenger:", error);
-            this.showNotification("Error rejecting passenger", "error");
-        }
-    }
-
-    updatePassengerCount() {
-        if (this.paxCount) {
-            this.paxCount.textContent = this.pendingPassengers.length;
-        }
-    }
-
-    getCurrentTime() {
-        const now = new Date();
-        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    showNotification(message, type = "info") {
-        if (!this.notification) return;
-
-        this.notification.textContent = message;
-        this.notification.className = `notification ${type}`;
-        this.notification.style.display = 'block';
-
-        setTimeout(() => {
-            this.notification.style.display = 'none';
-        }, 3000);
-    }
-
     clearForm() {
-        if (this.passengerForm) this.passengerForm.reset();
-        this.setCurrentDate(); // Reset date to today
-        if (this.numPaxInput) this.numPaxInput.value = 1;
-        if (this.fqtvInput) this.fqtvInput.value = "";
-        if (this.serialInput) this.serialInput.value = "";
-        if (this.remarksInput) this.remarksInput.value = "";
-        
-        // Focus back on QR input
-        if (this.qrInput) {
-            this.qrInput.focus();
-        }
-    }
-
-    validateForm() {
-        if (!this.nameInput.value.trim()) {
-            this.showNotification("Please enter passenger name", "error");
-            this.nameInput.focus();
-            return false;
-        }
-
-        if (!this.seatNoInput.value.trim()) {
-            this.showNotification("Please enter seat number", "error");
-            this.seatNoInput.focus();
-            return false;
-        }
-
-        if (!this.flightNoInput.value.trim()) {
-            this.showNotification("Please enter flight number", "error");
-            this.flightNoInput.focus();
-            return false;
-        }
-
-        if (!this.dateInput.value) {
-            this.showNotification("Please select date", "error");
-            this.dateInput.focus();
-            return false;
-        }
-
-        return true;
+        this.nameField.value = "";
+        this.flightField.value = "";
+        this.seatField.value = "";
+        this.airlineField.value = "";
+        this.adultsInput.value = 1;
+        this.kidsInput.value = 0;
+        this.paidInput.value = 0;
+        this.balanceInput.value = 0;
+        this.qrInput.value = "";
+        this.currencyInput.value = "USD";
+        this.rateTypeInput.value = "A";
+        this.paymentTypeInput.value = "Cash";
+        setTimeout(()=>this.qrInput.focus(),100);
+        this.calculate();
     }
 
     initializeEventListeners() {
-        // QR Code input with auto-fill
+        this.adultsInput.addEventListener('input', () => this.calculate());
+        this.kidsInput.addEventListener('input', () => this.calculate());
+        this.currencyInput.addEventListener('change', () => this.calculate());
+        this.rateTypeInput.addEventListener('change', () => this.calculate());
+        this.paymentTypeInput.addEventListener('change', () => { this.togglePaymentFields(); this.calculate(); });
+        this.paidInput.addEventListener('input', () => this.calculate());
+
         let qrTimeout = null;
-        if (this.qrInput) {
-            this.qrInput.addEventListener('input', (e) => {
-                clearTimeout(qrTimeout);
-                qrTimeout = setTimeout(() => {
-                    const qr = e.target.value;
-                    if (qr.length > 5) {
-                        const { name, flightNo, seatNo } = this.parseQR(qr);
-                        if (this.nameInput) this.nameInput.value = name;
-                        if (this.flightNoInput) this.flightNoInput.value = flightNo;
-                        if (this.seatNoInput) this.seatNoInput.value = seatNo;
-                        if (this.airlineInput) this.airlineInput.value = this.getAirline(flightNo);
-                    }
-                }, 300);
-            });
-        }
-
-        // Auto-fill airline when flight number changes
-        if (this.flightNoInput) {
-            this.flightNoInput.addEventListener('blur', () => {
-                const flightNo = this.flightNoInput.value.trim();
-                if (flightNo && this.airlineInput) {
-                    this.airlineInput.value = this.getAirline(flightNo);
+        this.qrInput.addEventListener('input', (e) => {
+            clearTimeout(qrTimeout);
+            qrTimeout = setTimeout(() => {
+                const qr = e.target.value;
+                if (qr.length > 5) {
+                    const { name, flightNo, seatNo } = this.parseQR(qr);
+                    this.nameField.value = name;
+                    this.flightField.value = flightNo;
+                    this.seatField.value = seatNo;
+                    this.airlineField.value = this.getAirline(flightNo);
+                    this.calculate();
                 }
-            });
-        }
+            }, 300);
+        });
 
-        // Form submission
-        if (this.passengerForm) {
-            this.passengerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                if (!this.validateForm()) return;
-
-                const passengerData = {
-                    name: this.nameInput.value.trim(),
-                    seatNo: this.seatNoInput.value.trim(),
-                    flightNo: this.flightNoInput.value.trim(),
-                    airline: this.airlineInput.value,
-                    date: this.dateInput.value,
-                    numPax: parseInt(this.numPaxInput.value) || 1,
-                    fqtv: this.fqtvInput.value.trim() || "-",
-                    serial: this.serialInput.value.trim() || "-",
-                    remarks: this.remarksInput.value.trim() || ""
-                };
-
-                await this.savePassenger(passengerData);
-            });
-        }
-
-        // Clear form
-        if (this.clearBtn) {
-            this.clearBtn.addEventListener('click', () => {
-                this.clearForm();
-            });
-        }
-
-        // Navigation buttons
-        if (this.dashboardBtn) {
-            this.dashboardBtn.addEventListener('click', () => {
-                window.location.href = "dashboard.html";
-            });
-        }
-
-        if (this.reportBtn) {
-            this.reportBtn.addEventListener('click', () => {
-                window.location.href = "airlinereport.html";
-            });
-        }
+        if (this.saveBtn) this.saveBtn.addEventListener('click', async () => await this.savePayment());
+        if (this.clearBtn) this.clearBtn.addEventListener('click', () => this.clearForm());
     }
 }
 
-// Initialize the application when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
-    window.passengerApp = new PassengerApprovalSystem();
+    window.walkInApp = new WalkInPaymentApp();
 });
