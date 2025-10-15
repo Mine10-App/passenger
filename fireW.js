@@ -1,11 +1,11 @@
 var firebaseConfigWalkin = {
-  apiKey: "AIzaSyAc8RRBC5Cm_wCdoJuUPd1Qh5yHLHRqPY0",
-  authDomain: "walkin-56b47.firebaseapp.com",
-  projectId: "walkin-56b47",
-  storageBucket: "walkin-56b47.firebasestorage.app",
-  messagingSenderId: "513281379731",
-  appId: "1:513281379731:web:abc139deadda3a18566c66",
-  measurementId: "G-1WHEBZWLZ4"
+  apiKey: "AIzaSyCMOPJnK_qpUZcHUWi6EQz-qclrNsDky3U",
+  authDomain: "psysko-8d035.firebaseapp.com",
+  projectId: "psysko-8d035",
+  storageBucket: "psysko-8d035.firebasestorage.app",
+  messagingSenderId: "176989826632",
+  appId: "1:176989826632:web:bae58e639edbd8d4adf27d",
+  measurementId: "G-XL5YJR6L74"
 };
 
 
@@ -17,4 +17,5 @@ if (!walkinApp) {
 }
 
 window.walkinDb = walkinApp.firestore();
+
 console.log("✅ Walk-in DB (walkinApp) initialized");
