@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Shift Report</title>
+<style>
+:root {
+    --primary: #3b82f6;
+    --primary-light: #dbeafe;
+    --primary-lighter: #eff6ff;
+    --secondary: #64748b;
+    --light-blue: #f0f9ff;
+    --medium-blue: #e0f2fe;
+    --dark-blue: #1e40af;
+    --light: #f8fafc;
+    --dark: #1e293b;
+    --border: #bfdbfe;
+    --shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    --radius: 8px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: var(--dark);
+    line-height: 1.5;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.company-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--dark-blue);
+    text-align: center;
+    flex: 1;
+}
+
+.report-info {
+    text-align: right;
+    font-size: 14px;
+    background: var(--primary-lighter);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.report-info-item {
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.report-info-label {
+    font-weight: 600;
+    color: var(--dark-blue);
+}
+
+.report-info-value {
+    color: var(--dark);
+    min-width: 80px;
+}
+
+h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--dark-blue);
+    text-align: center;
+}
+
+.controls {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--primary-lighter);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 150px;
+}
+
+label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: var(--dark-blue);
+}
+
+input, select, button {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    min-width: 140px;
+}
+
+.btn:hover {
+    background: var(--dark-blue);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--secondary);
+}
+
+.btn-secondary:hover {
+    background: #475569;
+    transform: translateY(-1px);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+th {
+    background: var(--primary);
+    color: white;
+    padding: 14px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid var(--primary);
+}
+
+td {
+    padding: 12px;
+    border: 1px solid var(--border);
+}
+
+tbody tr:nth-child(even) {
+    background: var(--primary-lighter);
+}
+
+tbody tr:hover {
+    background: var(--medium-blue);
+}
+
+tfoot td {
+    font-weight: 700;
+    background: var(--dark-blue);
+    color: white;
+    font-size: 15px;
+    border: 1px solid var(--dark-blue);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--secondary);
+    font-style: italic;
+    background: var(--primary-lighter);
+}
+
+/* Print Styles - Black and White Only */
+@media print {
+    body {
+        background: white !important;
+        padding: 10px;
+        color: black !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid black !important;
+        background: white !important;
+    }
+    
+    .controls, .btn {
+        display: none !important;
+    }
+    
+    header {
+        margin-bottom: 15px;
+        border-bottom: 1px solid black !important;
+    }
+    
+    .company-name {
+        color: black !important;
+    }
+    
+    .report-info {
+        background: white !important;
+        border: 1px solid black !important;
+        color: black !important;
+    }
+    
+    .report-info-label {
+        color: black !important;
+    }
+    
+    table {
+        box-shadow: none !important;
+        border: 1px solid black !important;
+    }
+    
+    th {
+        background: #f0f0f0 !important;
+        color: black !important;
+        border: 1px solid black !important;
+    }
+    
+    td {
+        border: 1px solid black !important;
+    }
+    
+    tbody tr:nth-child(even) {
+        background: #f8f8f8 !important;
+    }
+    
+    tbody tr:hover {
+        background: white !important;
+    }
+    
+    tfoot td {
+        background: #e0e0e0 !important;
+        color: black !important;
+        border: 1px solid black !important;
+    }
+    
+    .empty-state {
+        background: white !important;
+        color: black !important;
+    }
+    
+    h2 {
+        color: black !important;
+    }
+    
+    /* Remove all blue colors for print */
+    * {
+        color: black !important;
+        border-color: black !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .form-group {
+        width: 100%;
+    }
+    
+    header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .company-name {
+        margin-bottom: 10px;
+    }
+    
+    .report-info {
+        text-align: center;
+    }
+    
+    .report-info-item {
+        justify-content: center;
+    }
+    
+    table {
+        font-size: 12px;
+    }
+    
+    th, td {
+        padding: 8px 6px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <header>
+            <div class="company-name" id="companyName">Company Name</div>
+            <div class="report-info">
+                <div class="report-info-item">
+                    <span class="report-info-label">Date:</span>
+                    <span class="report-info-value" id="reportDate"></span>
+                </div>
+                <div class="report-info-item">
+                    <span class="report-info-label">Shift:</span>
+                    <span class="report-info-value" id="shiftName">-</span>
+                </div>
+            </div>
+        </header>
+
+        <h2>Daily Shift Report</h2>
+
+        <div class="controls">
+            <div class="form-group">
+                <label for="reportDateInput">Date</label>
+                <input type="date" id="reportDateInput">
+            </div>
+            <div class="form-group">
+                <label for="shiftSelect">Shift</label>
+                <select id="shiftSelect">
+                    <option value="">Select Shift</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Evening">Evening</option>
+                    <option value="Night">Night</option>
+                </select>
+            </div>
+            <button id="fetchReportBtn" class="btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9v-4.5"></path>
+                </svg>
+                Generate Report
+            </button>
+            <button id="printBtn" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Print / Save PDF
+            </button>
+        </div>
+
+        <div id="reportArea">
+            <table id="reportTable">
+                <thead>
+                    <tr>
+                        <th>Flight No</th>
+                        <th>Airline</th>
+                        <th>Total Passengers</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2">Grand Total</td>
+                        <td id="grandTotal">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="fire.js"></script>
+<script src="Co.js"></script>
+
+<script>
+const reportDateInput = document.getElementById("reportDateInput");
+const shiftSelect = document.getElementById("shiftSelect");
+const fetchReportBtn = document.getElementById("fetchReportBtn");
+const printBtn = document.getElementById("printBtn");
+const reportDateEl = document.getElementById("reportDate");
+const companyNameEl = document.getElementById("companyName");
+const shiftNameEl = document.getElementById("shiftName");
+const reportTableBody = document.querySelector("#reportTable tbody");
+const grandTotalEl = document.getElementById("grandTotal");
+const reportArea = document.getElementById("reportArea");
+
+// ---------- Set company name from Co.js ----------
+if(typeof companyInfo !== 'undefined'){
+    companyNameEl.textContent = companyInfo.name;
+}
+
+// ---------- Set today's date ----------
+reportDateInput.value = new Date().toISOString().split("T")[0];
+reportDateEl.textContent = new Date().toLocaleDateString();
+
+// ---------- Fetch Report ----------
+fetchReportBtn.addEventListener("click", async () => {
+    const dateVal = reportDateInput.value;
+    const shiftVal = shiftSelect.value;
+    if(!dateVal || !shiftVal) {
+        alert("Please select both date and shift!");
+        return;
+    }
+
+    // Update report date display
+    reportDateEl.textContent = new Date(dateVal).toLocaleDateString();
+    shiftNameEl.textContent = shiftVal;
+
+    // Get all approved passengers for that date + shift
+    const passengerSnapshot = await db.collection("passengers")
+        .where("date","==",dateVal)
+        .where("shift","==",shiftVal)
+        .where("approved","==",true)
+        .get();
+
+    const passengers = passengerSnapshot.docs.map(doc=>doc.data());
+
+    // Summarize by flight
+    const summary = {};
+    passengers.forEach(p=>{
+        const flightKey = p.flightNo;
+        if(!summary[flightKey]){
+            summary[flightKey] = { flightNo: p.flightNo, airline: p.airline || "", pax: 0 };
+        }
+        summary[flightKey].pax += p.numPax || 1;
+    });
+
+    // Render rows
+    reportTableBody.innerHTML = "";
+    let grandTotal = 0;
+    
+    if (Object.keys(summary).length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 3;
+        cell.textContent = "No approved passengers found for this shift";
+        cell.className = "empty-state";
+        row.appendChild(cell);
+        reportTableBody.appendChild(row);
+    } else {
+        Object.values(summary).forEach(f=>{
+            grandTotal += f.pax;
+            const row = document.createElement("tr");
+            const tdFlight = document.createElement("td"); 
+            tdFlight.textContent = f.flightNo;
+            const tdAirline = document.createElement("td"); 
+            tdAirline.textContent = f.airline || "-";
+            const tdPax = document.createElement("td"); 
+            tdPax.textContent = f.pax;
+            row.appendChild(tdFlight);
+            row.appendChild(tdAirline);
+            row.appendChild(tdPax);
+            reportTableBody.appendChild(row);
+        });
+    }
+
+    grandTotalEl.textContent = grandTotal;
+});
+
+// ---------- Print / PDF ----------
+printBtn.addEventListener("click", ()=>{
+    const printContents = document.querySelector('.card').innerHTML;
+    const originalContents = document.body.innerHTML;
+    
+    // Create a print-friendly version
+    document.body.innerHTML = `
+        <div class="container">
+            <div class="card">
+                ${printContents}
+            </div>
+        </div>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload();
+});
+</script>
+</body>
+</html>

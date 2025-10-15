@@ -389,8 +389,18 @@
         <!-- Passenger Table Card - Right Side (Larger) -->
         <div class="card passenger-list-card" style="min-height: 600px;">
             <div class="card-header">
-                <div class="card-title">Pending Approvals</div>
+                <div class="card-title">Passenger List</div>
                 <div class="passenger-count">Total: <span id="paxCount">0</span> Passengers</div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="status-filter-container">
+                <span class="status-filter-label">Status:</span>
+                <select class="filter-select status-filter" id="statusFilter">
+                    <option value="all">All Passengers</option>
+                    <option value="pending">Pending Approvals</option>
+                    <option value="approved">Approved</option>
+                </select>
             </div>
 
             <!-- Table Actions -->
@@ -399,13 +409,36 @@
                     <div class="form-group search-box">
                         <input type="text" id="searchInput" class="compact-input" style="width: auto;" placeholder="Search passengers...">
                     </div>
+                    <div class="filter-group">
+                        <div class="single-date-filter">
+                            <input type="date" id="dateFilter" class="compact-input" style="width: auto;">
+                            <button type="button" class="btn-outline" id="applyDateFilter" style="width: auto; padding: 6px 10px;">Apply</button>
+                        </div>
+                        <select class="filter-select compact-input" id="shiftFilter">
+                            <option value="all">All Shifts</option>
+                            <option value="Morning">Morning Shift</option>
+                            <option value="Evening">Evening Shift</option>
+                        </select>
+                        <select class="filter-select compact-input" id="airlineFilter">
+                            <option value="all">All Airlines</option>
+                        </select>
+                    </div>
                 </div>
+                <button class="btn-outline" id="exportBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export
+                </button>
             </div>
 
             <div class="table-container">
                 <table id="passengerTable">
                     <thead>
                         <tr>
+                            <th>Date</th>
                             <th>Airline</th>
                             <th>Flight</th>
                             <th>Name</th>
@@ -462,6 +495,16 @@ const shiftName = document.getElementById("shiftName");
 const shiftTime = document.getElementById("shiftTime");
 const emptyState = document.getElementById("emptyState");
 const searchInput = document.getElementById("searchInput");
+const dateFilter = document.getElementById("dateFilter");
+const applyDateFilter = document.getElementById("applyDateFilter");
+const shiftFilter = document.getElementById("shiftFilter");
+const airlineFilter = document.getElementById("airlineFilter");
+const statusFilter = document.getElementById("statusFilter");
+const exportBtn = document.getElementById("exportBtn");
+const totalPassengers = document.getElementById("totalPassengers");
+const todayPassengers = document.getElementById("todayPassengers");
+const activeFlights = document.getElementById("activeFlights");
+const pendingApprovals = document.getElementById("pendingApprovals");
 const clearBtn = document.getElementById("clearBtn");
 
 // Current shift variables
@@ -472,11 +515,12 @@ let isShiftOpen = false;
 let isQREntry = false;
 
 // Track current status filter
-let currentStatusFilter = "pending";
+let currentStatusFilter = "all";
 
 // Set current date
 const today = new Date().toISOString().split("T")[0];
 form.date.value = today;
+dateFilter.value = today;
 
 // ----------- Fetch current shift from Firestore -----------
 async function fetchCurrentShift() {
@@ -554,6 +598,7 @@ async function fetchPassengers(){
         applyStatusFilter();
         
         updateStats();
+        populateAirlineFilter();
     } catch (error) {
         console.error("Error fetching passengers:", error);
     }
@@ -561,14 +606,22 @@ async function fetchPassengers(){
 
 // Apply status-based filtering
 function applyStatusFilter() {
-    // Only show pending approvals
-    filteredPassengerList = passengerList.filter(p => p.approved !== true);
+    if (currentStatusFilter === "all") {
+        // Show all passengers
+        filteredPassengerList = [...passengerList];
+    } else if (currentStatusFilter === "pending") {
+        // Show only unapproved passengers
+        filteredPassengerList = passengerList.filter(p => p.approved !== true);
+    } else if (currentStatusFilter === "approved") {
+        // Show only approved passengers
+        filteredPassengerList = passengerList.filter(p => p.approved === true);
+    }
     
-    // Apply additional filters (search)
+    // Apply additional filters (search, date, etc.)
     applyAdditionalFilters();
 }
 
-// Apply search filter
+// Apply search, date, shift, and airline filters
 function applyAdditionalFilters() {
     let result = [...filteredPassengerList]; // Start with status-filtered list
     
@@ -581,6 +634,24 @@ function applyAdditionalFilters() {
             p.airline.toLowerCase().includes(searchTerm) ||
             (p.seatNo && p.seatNo.toLowerCase().includes(searchTerm))
         );
+    }
+    
+    // Date filter
+    const dateFilterValue = dateFilter.value;
+    if(dateFilterValue){
+        result = result.filter(p => p.date === dateFilterValue);
+    }
+    
+    // Shift filter
+    const shiftFilterValue = shiftFilter.value;
+    if(shiftFilterValue !== "all"){
+        result = result.filter(p => p.shift === shiftFilterValue);
+    }
+    
+    // Airline filter
+    const airlineFilterValue = airlineFilter.value;
+    if(airlineFilterValue !== "all"){
+        result = result.filter(p => p.airline === airlineFilterValue);
     }
     
     filteredPassengerList = result;
@@ -599,6 +670,25 @@ function renderPassengers(){
     tableBody.innerHTML="";
     filteredPassengerList.forEach(p=>{
         const row = document.createElement("tr");
+        
+        // Date field
+        const dateTd = document.createElement("td");
+        const dateContent = document.createElement("div");
+        dateContent.className="editable-cell";
+        dateContent.textContent = p.date;
+        dateContent.contentEditable = true;
+        dateContent.oninput = ()=>{p.date=dateContent.textContent; updateTotal();}
+        dateContent.onblur= async ()=>{
+            try {
+                await db.collection("passengers").doc(p.id).update({
+                    date:p.date
+                });
+            } catch (error) {
+                console.error("Error updating passenger:", error);
+            }
+        };
+        dateTd.appendChild(dateContent);
+        row.appendChild(dateTd);
         
         // Airline field
         const airlineTd = document.createElement("td");
@@ -832,111 +922,57 @@ function updateStats(){
     const todayPassengersList = passengerList.filter(p => p.date === today);
     const pendingList = passengerList.filter(p => p.approved !== true);
     const uniqueFlights = [...new Set(passengerList.map(p => p.flightNo))];
+    
+    totalPassengers.textContent = passengerList.reduce((sum,p)=>sum+(p.numPax||1),0);
+    todayPassengers.textContent = todayPassengersList.reduce((sum,p)=>sum+(p.numPax||1),0);
+    activeFlights.textContent = uniqueFlights.length;
+    pendingApprovals.textContent = pendingList.length;
 }
 
-// ---------- QR PARSER (Remove Last 6 Letters from Name) ----------
-function parseQR(code) {
-    code = code.trim().toUpperCase().replace(/\s+/g, ' ');
-    let name = "", flightNo = "", seatNo = "", fqtv = "";
-    const allParts = code.split(' ');
+function populateAirlineFilter(){
+    const airlines = [...new Set(passengerList.map(p => p.airline))];
+    airlineFilter.innerHTML = '<option value="all">All Airlines</option>';
+    airlines.forEach(airline => {
+        const option = document.createElement("option");
+        option.value = airline;
+        option.textContent = airline;
+        airlineFilter.appendChild(option);
+    });
+}
 
-    if (code.startsWith("TKVCPO")) {
+// ---------- QR PARSER ----------
+function parseQR(code){
+    code = code.trim().toUpperCase().replace(/\s+/g,' ');
+    let name="", flightNo="", seatNo="";
+    const allParts = code.split(' ');
+    if(code.startsWith("TKVCPO")){
         const tkIndex = code.indexOf("TK0");
-        if (tkIndex != -1) { 
-            flightNo = code.substring(tkIndex, tkIndex + 6); 
+        if(tkIndex!=-1){ 
+            flightNo = code.substring(tkIndex, tkIndex+6); 
             name = code.substring(6, tkIndex).trim();
         }
         const mlePos = code.indexOf("MLE");
-        if (mlePos != -1) { 
+        if(mlePos!=-1){ 
             const afterMLE = code.substring(mlePos).split(' ')[0]; 
-            if (afterMLE.length >= 11) seatNo = afterMLE.substring(8, 11); 
+            if(afterMLE.length>=11) seatNo = afterMLE.substring(8,11); 
         }
     } else {
-        // ----- NAME FIX -----
-        const mleIndex = allParts.findIndex(w => w.includes("MLE"));
-        if (mleIndex > 0) {
-            // Join everything from the first word (without "M1") up to before "MLE"
-            let nameParts = allParts.slice(0, mleIndex);
-            nameParts[0] = nameParts[0].substring(2); // remove "M1"
-            name = nameParts.join(' ').trim();
-        } else {
-            name = allParts[0].substring(2); // fallback
-        }
-
-        // ----- REMOVE LAST 6 CHARACTERS FROM NAME -----
-        if (name.length > 6) {
-            name = name.substring(0, name.length - 6).trim();
-        }
-
-        // ----- FLIGHT / SEAT -----
-        if (mleIndex != -1) {
+        name = allParts[0].substring(2);
+        const mleIndex = allParts.findIndex(w=>w.includes("MLE"));
+        if(mleIndex!=-1){
             const mleWord = allParts[mleIndex];
-            const nextWord = (mleIndex + 1 < allParts.length) ? allParts[mleIndex + 1] : "";
-            flightNo = mleWord.slice(-2) + nextWord;
-            const partsAfterMLE = allParts.slice(mleIndex + 1);
-            for (let w of partsAfterMLE) { 
-                if (w.length >= 9 && !w.includes("QR") && !w.includes("MLE")) { 
-                    seatNo = w.substring(5, w.length - 4); 
+            const nextWord = (mleIndex+1<allParts.length)?allParts[mleIndex+1]:"";
+            flightNo = mleWord.slice(-2)+nextWord;
+            const partsAfterMLE = allParts.slice(mleIndex+1);
+            for(let w of partsAfterMLE){ 
+                if(w.length>=9 && !w.includes("QR") && !w.includes("MLE")){ 
+                    seatNo = w.substring(5,w.length-4); 
                     break; 
                 }
             }
         }
     }
-
-    // ----- FQTV DETECTION -----
-    fqtv = detectFQTVDynamic(allParts, flightNo);
-
-    console.log("QR Parser Result:", { name, flightNo, seatNo, fqtv });
-    return { name, flightNo, seatNo, fqtv };
-}
-
-// ---------- FQTV DETECTOR ----------
-function detectFQTVDynamic(parts, flightNo) {
-    if (!flightNo || flightNo.length < 2) return "";
-    
-    const airlineCode = flightNo.substring(0, 2).toUpperCase();
-    let fqtv = "";
-
-    // Method 1: Look for airline code followed by numbers
-    for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === airlineCode && /^\d+$/.test(parts[i + 1] || "")) {
-            fqtv = `${airlineCode}-${parts[i + 1]}`;
-            
-            // Check for status codes
-            const lastPart = parts[parts.length - 1];
-            if (lastPart.endsWith("Y1") || lastPart.endsWith("N1")) {
-                fqtv += "/G"; // Gold status
-            } else if (lastPart.endsWith("N2")) {
-                fqtv += "/S"; // Silver status
-            }
-            break;
-        }
-    }
-
-    // Method 2: Look for FQTV patterns in the text
-    if (!fqtv) {
-        const fqtvPattern = new RegExp(`${airlineCode}\\s*(\\d+)`, 'i');
-        const match = parts.join(' ').match(fqtvPattern);
-        if (match) {
-            fqtv = `${airlineCode}-${match[1]}`;
-        }
-    }
-
-    // Method 3: Look for common FQTV formats
-    if (!fqtv) {
-        for (let part of parts) {
-            // Pattern: XX123456789 (airline code followed by numbers)
-            const pattern = /^([A-Z]{2})(\d{6,12})$/;
-            const match = part.match(pattern);
-            if (match && match[1] === airlineCode) {
-                fqtv = `${match[1]}-${match[2]}`;
-                break;
-            }
-        }
-    }
-
-    console.log("FQTV Detection Result:", fqtv);
-    return fqtv;
+    return {name, flightNo, seatNo};
 }
 
 // ---------- Fetch flight status ----------
@@ -1206,6 +1242,45 @@ clearBtn.addEventListener("click", () => {
 
 // Filter functionality
 searchInput.addEventListener("input", applyAdditionalFilters);
+applyDateFilter.addEventListener("click", applyAdditionalFilters);
+shiftFilter.addEventListener("change", applyAdditionalFilters);
+airlineFilter.addEventListener("change", applyAdditionalFilters);
+statusFilter.addEventListener("change", () => {
+    currentStatusFilter = statusFilter.value;
+    applyStatusFilter();
+});
+
+// Export functionality
+exportBtn.addEventListener("click", () => {
+    const headers = ["Date", "Shift", "Airline", "Flight No", "Name", "Seat", "FQTV", "Serial", "Remarks", "No. of Pax", "Time Added", "Status"];
+    const csvContent = [
+        headers.join(","),
+        ...filteredPassengerList.map(p => [
+            p.date,
+            p.shift,
+            p.airline,
+            p.flightNo,
+            p.name,
+            p.seatNo,
+            p.fqtv,
+            p.serial,
+            p.remarks,
+            p.numPax,
+            p.timeAdded,
+            p.approved ? "Approved" : "Pending"
+        ].join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "passengers.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
 
 // ---------- Initial fetch ----------
 fetchCurrentShift();
@@ -1224,6 +1299,7 @@ db.collection("passengers")
         applyStatusFilter();
         
         updateStats();
+        populateAirlineFilter();
     });
 </script>
 </body>
