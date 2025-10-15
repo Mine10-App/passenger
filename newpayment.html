@@ -6,7 +6,8 @@
 <title>New Payment</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="fire2.js"></script>
+<script src="fireC.js"></script> <!-- Main Shifts DB -->
+<script src="fireW.js"></script> <!-- Walk-in Payments DB -->
 <script src="rate.js"></script>
 <script src="Co.js"></script>
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
@@ -450,8 +451,9 @@ input[readonly] {
 </div>
 
 <script>
-// ---------- DOM & USER ----------
-const shiftsRef = window.db.collection("shifts");
+// ------------------- DOM & USER -------------------
+const shiftsRef = firebase.firestore().collection("shifts"); // from fireC.js
+const paymentsRef = window.walkinDb.collection("payments"); // from fireW.js
 const loggedUser = JSON.parse(localStorage.getItem('loggedInUser'));
 const userNameField = document.getElementById('userNameField');
 const userLevelField = document.getElementById('userLevelField');
@@ -474,7 +476,7 @@ const paymentTypeSelect = document.getElementById("paymentType");
 const cashPaymentFields = document.getElementById("cashPaymentFields");
 const saveBtn = document.getElementById("saveBtn");
 
-// ---------- USER INFO ----------
+// ------------------- USER INFO -------------------
 if(!loggedUser){
   alert("No user logged in.");
   window.location.href="login.html";
@@ -482,28 +484,24 @@ if(!loggedUser){
 userNameField.textContent = loggedUser.name;
 userLevelField.textContent = loggedUser.Level;
 dateField.textContent = new Date().toISOString().split('T')[0];
+if(loggedUser.Level.toLowerCase()!=="supervisor") rateSelect.disabled=true;
 
-// Disable rate field if not supervisor
-if(loggedUser.Level.toLowerCase() !== "supervisor"){
-    rateSelect.disabled = true;
-}
-
-// ---------- CURRENT SHIFT ----------
+// ------------------- CURRENT SHIFT -------------------
 async function fetchCurrentShift(){
     const today = new Date().toISOString().split('T')[0];
-    const snapshot = await shiftsRef.where("currentDate","==",today).get();
+    const snapshot = await shiftsRef.where("date","==",today).get();
     let shiftName = "No shift open";
     if(!snapshot.empty){
         const data = snapshot.docs[0].data();
-        if(data.shift1status==="Open") shiftName = data.shift1name;
-        else if(data.shift2status==="Open") shiftName = data.shift2name;
+        if(data.shift1?.status==="Open") shiftName = "Morning";
+        else if(data.shift2?.status==="Open") shiftName = "Afternoon";
     }
     shiftField.textContent = shiftName;
 }
 fetchCurrentShift();
 setInterval(fetchCurrentShift,30000);
 
-// ---------- QR PARSER ----------
+// ------------------- QR PARSER -------------------
 function parseQR(code){
     code = code.trim().toUpperCase().replace(/\s+/g,' ');
     const allParts = code.split(' ');
@@ -545,43 +543,35 @@ qrInput.addEventListener("change",()=>{
     qrInput.value='';
 });
 
-// ---------- UPPERCASE INPUT ----------
+// ------------------- UPPERCASE INPUT -------------------
 [nameField, flightField, seatField].forEach(input=>{
     input.addEventListener("input",()=>input.value=input.value.toUpperCase());
 });
 
-// ---------- CALCULATION ----------
+// ------------------- CALCULATION -------------------
 function calculateTotals(){
     if(typeof rates==="undefined") return;
-
     const adults = parseInt(adultCountInput.value)||0;
     const kids = parseInt(kidCountInput.value)||0;
     const currency = currencySelect.value;
     const rateType = rateSelect.value;
-
     const adultKey = `Adult${rateType}${currency}`;
     const kidKey = `Kids${rateType}${currency}`;
-
     const adultPrice = rates[adultKey]?.price||0;
     const kidPrice = rates[kidKey]?.price||0;
     const gstRate = rates[adultKey]?.GST||0;
-
     const subtotal = adults*adultPrice + kids*kidPrice;
-    const gst = subtotal * (gstRate/100);
+    const gst = subtotal*(gstRate/100);
     const total = subtotal + gst;
-
     const symbol = currency==="USD"?"$":"MVR ";
-    rateField.textContent = `${symbol}${subtotal.toFixed(2)}`;
-    gstField.textContent = `${symbol}${gst.toFixed(2)}`;
-    totalField.textContent = `${symbol}${total.toFixed(2)}`;
-
+    rateField.textContent=`${symbol}${subtotal.toFixed(2)}`;
+    gstField.textContent=`${symbol}${gst.toFixed(2)}`;
+    totalField.textContent=`${symbol}${total.toFixed(2)}`;
     updateBalance();
 }
 
 function updateBalance(){
     const total = parseFloat(totalField.textContent.replace(/[^0-9.-]+/g,""))||0;
-
-    // If payment type is not cash, hide paid & balance and set balance to 0
     if(paymentTypeSelect.value.toLowerCase()!=="cash"){
         cashPaymentFields.classList.add("hidden");
         balanceField.value = 0;
@@ -591,102 +581,67 @@ function updateBalance(){
         const balance = paid-total;
         const symbol = currencySelect.value==="USD"?"$":"MVR ";
         balanceField.value = `${symbol}${balance.toFixed(2)}`;
-        
-        // Apply color coding
-        balanceField.classList.remove("balance-positive", "balance-negative", "balance-zero");
-        if (balance < 0) {
-            balanceField.classList.add("balance-negative");
-        } else if (balance === 0) {
-            balanceField.classList.add("balance-zero");
-        } else {
-            balanceField.classList.add("balance-positive");
-        }
+        balanceField.classList.remove("balance-positive","balance-negative","balance-zero");
+        if(balance<0) balanceField.classList.add("balance-negative");
+        else if(balance===0) balanceField.classList.add("balance-zero");
+        else balanceField.classList.add("balance-positive");
     }
 }
 
-// ---------- LISTENERS ----------
-[adultCountInput, kidCountInput, rateSelect, currencySelect, paidAmountInput, paymentTypeSelect].forEach(el=>{
+// ------------------- LISTENERS -------------------
+[adultCountInput,kidCountInput,rateSelect,currencySelect,paidAmountInput,paymentTypeSelect].forEach(el=>{
     el.addEventListener("input",calculateTotals);
 });
 paymentTypeSelect.addEventListener("change",calculateTotals);
+window.addEventListener('load',()=>{if(typeof rates!=="undefined") calculateTotals(); else setTimeout(calculateTotals,100);});
 
-// INITIAL CALC
-window.addEventListener('load',()=>{
-    if(typeof rates!=="undefined") calculateTotals();
-    else setTimeout(calculateTotals,100);
-});
-
-const paymentsRef = window.db.collection("payments");
-let lastReceiptNo = 0;
-let isProcessing = false;
-
-// ---------- GET LAST RECEIPT NO ----------
+let lastReceiptNo=0, isProcessing=false;
 async function getLastReceiptNo(){
-  const snapshot = await paymentsRef.orderBy("receiptNo","desc").limit(1).get();
-  if(!snapshot.empty){
-    lastReceiptNo = snapshot.docs[0].data().receiptNo;
-  }
+    const snapshot = await paymentsRef.orderBy("receiptNo","desc").limit(1).get();
+    if(!snapshot.empty) lastReceiptNo = snapshot.docs[0].data().receiptNo;
 }
 getLastReceiptNo();
 
-// ---------- SAVE & REDIRECT TO RECEIPT PAGE ----------
-document.getElementById("saveBtn").addEventListener("click", async ()=>{
-  // Prevent multiple submissions
-  if (isProcessing) {
-    alert("Payment is already being processed. Please wait.");
-    return;
-  }
-  
-  isProcessing = true;
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-  
-  try {
-    lastReceiptNo++;
-
-    // Collect data
-    const data = {
-      receiptNo: lastReceiptNo,
-      user: loggedUser.name,
-      level: loggedUser.Level,
-      date: dateField.textContent,
-      shift: shiftField.textContent,
-      passenger: nameField.value,
-      flight: flightField.value,
-      seat: seatField.value,
-      adults: parseInt(adultCountInput.value)||0,
-      kids: parseInt(kidCountInput.value)||0,
-      rateType: rateSelect.value,
-      currency: currencySelect.value,
-      paymentType: paymentTypeSelect.value,
-      subtotal: parseFloat(rateField.textContent.replace(/[^0-9.-]+/g,""))||0,
-      gst: parseFloat(gstField.textContent.replace(/[^0-9.-]+/g,""))||0,
-      total: parseFloat(totalField.textContent.replace(/[^0-9.-]+/g,""))||0,
-      paid: parseFloat(paidAmountInput.value)||0,
-      balance: parseFloat(balanceField.value.replace(/[^0-9.-]+/g,""))||0,
-      timestamp: new Date()
-    };
-
-    // Save to Firestore
-    const docRef = await paymentsRef.add(data);
-    
-    // Store the document ID in sessionStorage (same approach as reprint receipts)
-    sessionStorage.setItem("lastPaymentId", docRef.id);
-    
-    // Redirect to receipt page
-    window.location.href = "receipt.html";
-
-  } catch (error) {
-    console.error("Error saving payment:", error);
-    alert("Error saving payment. Please try again.");
-    // Roll back the receipt number on error
-    lastReceiptNo--;
-    
-    // Re-enable the save button
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Process Payment';
-    isProcessing = false;
-  }
+// ------------------- SAVE PAYMENT -------------------
+saveBtn.addEventListener("click", async ()=>{
+    if(isProcessing){ alert("Payment is already being processed. Please wait."); return; }
+    isProcessing=true;
+    saveBtn.disabled=true;
+    saveBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Processing...';
+    try {
+        lastReceiptNo++;
+        const data={
+            receiptNo:lastReceiptNo,
+            user:loggedUser.name,
+            level:loggedUser.Level,
+            date:dateField.textContent,
+            shift:shiftField.textContent,
+            passenger:nameField.value,
+            flight:flightField.value,
+            seat:seatField.value,
+            adults:parseInt(adultCountInput.value)||0,
+            kids:parseInt(kidCountInput.value)||0,
+            rateType:rateSelect.value,
+            currency:currencySelect.value,
+            paymentType:paymentTypeSelect.value,
+            subtotal:parseFloat(rateField.textContent.replace(/[^0-9.-]+/g,""))||0,
+            gst:parseFloat(gstField.textContent.replace(/[^0-9.-]+/g,""))||0,
+            total:parseFloat(totalField.textContent.replace(/[^0-9.-]+/g,""))||0,
+            paid:parseFloat(paidAmountInput.value)||0,
+            balance:parseFloat(balanceField.value.replace(/[^0-9.-]+/g,""))||0,
+            timestamp:new Date()
+        };
+        const docRef = await paymentsRef.add(data);
+        sessionStorage.setItem("lastPaymentId",docRef.id);
+        window.location.href="receipt.html";
+    } catch(error){
+        console.error("Error saving payment:",error);
+        alert("Error saving payment. Please try again.");
+        lastReceiptNo--;
+        saveBtn.disabled=false;
+        saveBtn.innerHTML='<i class="fas fa-check-circle"></i> Process Payment';
+        isProcessing=false;
+    }
 });
 </script>
 
