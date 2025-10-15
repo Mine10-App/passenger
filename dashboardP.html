@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="fire2.js"></script> <!-- your Firebase config -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background-color: #f8f9fa; 
+    margin: 0; 
+    padding: 0; 
+    color: #333;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  color: #fff;
+  padding: 18px 25px;
+  font-weight: bold;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.topbar div { 
+    margin: 8px 0; 
+    display: flex;
+    align-items: center;
+}
+.topbar i {
+    margin-right: 8px;
+    font-size: 1.1em;
+}
+.container { 
+    padding: 25px; 
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.card { 
+    background: #fff; 
+    padding: 25px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+    margin-bottom: 25px; 
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+.card h3 {
+    color: #B8860B;
+    border-bottom: 1px solid #f0e6c8;
+    padding-bottom: 12px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+}
+.card h3 i {
+    margin-right: 12px;
+    color: #D4AF37;
+}
+button { 
+    padding: 14px 24px; 
+    border: none; 
+    border-radius: 8px; 
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%); 
+    color: #fff; 
+    font-weight: bold; 
+    cursor: pointer; 
+    margin: 8px; 
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 8px rgba(212, 175, 55, 0.3);
+    font-size: 1.05em;
+    min-height: 60px;
+    min-width: 180px;
+}
+button i {
+    margin-right: 10px;
+    font-size: 1.2em;
+}
+button:hover { 
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+}
+.buttons { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 15px;
+    justify-content: center;
+}
+.notification { 
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); 
+    padding: 18px 25px; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    margin-bottom: 20px; 
+    cursor: pointer; 
+    color: #856404;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    border-left: 5px solid #D4AF37;
+}
+.notification:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+.notification i {
+    margin-right: 15px;
+    font-size: 1.4em;
+    color: #B8860B;
+}
+.totals-container {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+.total-item {
+    flex: 1;
+    min-width: 180px;
+    background: linear-gradient(135deg, #fcf6e0 0%, #f5e6b3 100%);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #f0e6c8;
+}
+.total-item p {
+    margin: 0;
+    font-size: 1em;
+    color: #666;
+    font-weight: 500;
+}
+.total-value {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: #B8860B;
+    margin: 12px 0;
+}
+#currentDate, #currentShift, #userName, #userLevel {
+    color: #fff;
+    font-weight: bold;
+}
+.user-info {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 15px;
+    border-radius: 30px;
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    flex-direction: column;
+    text-align: center;
+    padding: 15px;
+  }
+  .topbar div {
+    margin: 10px 0;
+  }
+  .buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  button {
+    width: 100%;
+    max-width: 300px;
+  }
+  .totals-container {
+    flex-direction: column;
+  }
+  .container {
+    padding: 15px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><i class="fas fa-user"></i><span class="user-info">Logged in: <span id="userName"></span> (<span id="userLevel"></span>)</span></div>
+  <div><i class="fas fa-calendar-alt"></i>Current Date: <span id="currentDate">Loading...</span></div>
+  <div><i class="fas fa-clock"></i>Current Shift: <span id="currentShift">Loading...</span></div>
+  <div><button onclick="logout()"><i class="fas fa-sign-out-alt"></i>Logout</button></div>
+</div>
+
+<div class="container">
+  <!-- Navigation Buttons -->
+  <div class="card">
+    <h3><i class="fas fa-tachometer-alt"></i>Dashboard Navigation</h3>
+    <div class="buttons">
+      <button onclick="goToNewPayment()"><i class="fas fa-plus-circle"></i>New Payment</button>
+      <button onclick="goToReport()"><i class="fas fa-chart-bar"></i>Report</button>
+      <button onclick="goToUpdatePayments()"><i class="fas fa-sync-alt"></i>Update Payments</button>
+      <button onclick="goToEditPayments()"><i class="fas fa-edit"></i>Void / Edit</button>
+      <button onclick="goToShiftManagement()"><i class="fas fa-users"></i>Shift Management</button>
+      <button onclick="goToCashierManagement()"><i class="fas fa-user-tie"></i>Cashier Management</button>
+      <button onclick="goToReprint()"><i class="fas fa-print"></i>Reprint</button>
+    </div>
+  </div>
+
+  <!-- Totals Card -->
+  <div class="card">
+    <h3><i class="fas fa-chart-line"></i>Totals (Today & Current Shift)</h3>
+    <div class="totals-container">
+      <div class="total-item">
+        <p>Adults</p>
+        <div class="total-value" id="totalAdults">0</div>
+      </div>
+      <div class="total-item">
+        <p>Kids</p>
+        <div class="total-value" id="totalKids">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Updates Notification (clickable) -->
+  <div class="card notification" onclick="goToPendingUpdates()">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div>
+      <div style="font-size: 1.2em;">Pending Updates</div>
+      <div>There are <span id="pendingUpdates" style="font-size: 1.1em;">0</span> payments requiring attention</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const shiftsRef = window.db.collection("shifts");
+const paymentsRef = window.db.collection("payments");
+
+// Load logged in user
+const loggedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+if(!loggedUser) { window.location.href = 'login.html'; }
+document.getElementById('userName').textContent = loggedUser.name;
+document.getElementById('userLevel').textContent = loggedUser.Level;
+
+// Display current date
+function getFormattedDate(d = new Date()) {
+  return d.toISOString().split('T')[0];
+}
+document.getElementById('currentDate').textContent = getFormattedDate();
+
+// Load current shift
+async function loadCurrentShift() {
+  const today = getFormattedDate();
+  const snapshot = await shiftsRef.where("currentDate","==",today).get(); // use currentDate
+  if(snapshot.empty) {
+    document.getElementById('currentShift').textContent = "None";
+    return "None";
+  }
+
+  const data = snapshot.docs[0].data();
+  let shift = "None";
+
+  if(data.shift1status === "Open") shift = data.shift1name || "Morning";
+  else if(data.shift2status === "Open") shift = data.shift2name || "Evening";
+
+  document.getElementById('currentShift').textContent = shift;
+  return shift;
+}
+
+// Load totals for current date & shift
+async function loadTotals() {
+  const today = getFormattedDate();
+  const shift = document.getElementById("currentShift").textContent;
+
+  if(shift === "None") {
+    document.getElementById("totalAdults").textContent = 0;
+    document.getElementById("totalKids").textContent = 0;
+    return;
+  }
+
+  const snapshot = await paymentsRef
+    .where("date", "==", today)
+    .where("shift", "==", shift)
+    .get();
+
+  let adults = 0;
+  let kids = 0;
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    adults += Number(data.adults || 0);
+    kids += Number(data.kids || 0);
+  });
+
+  document.getElementById("totalAdults").textContent = adults;
+  document.getElementById("totalKids").textContent = kids;
+}
+
+// Load pending updates count
+async function loadPendingUpdates() {
+  const snapshot = await paymentsRef
+    .where("paymentType", "!=", "Cash")
+    .get();
+
+  let pendingCount = 0;
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    if(!data.approvalCode || !data.batchNo) pendingCount++;
+  });
+
+  document.getElementById("pendingUpdates").textContent = pendingCount;
+}
+
+// Navigation functions
+function goToPendingUpdates() { window.location.href = 'updatePayments.html?pending=true'; }
+function goToNewPayment() { window.location.href = 'newpayment.html'; }
+function goToReport() { window.location.href = 'DReport.html'; }
+function goToUpdatePayments() { window.location.href = 'updatePayments.html'; }
+function goToEditPayments() { window.location.href = 'edit_payments.html'; }
+function goToShiftManagement() { window.location.href = 'shiftmanagement.html'; }
+function goToCashierManagement() { window.location.href = 'cashiermanagement.html'; }
+function goToReprint() { window.location.href = 'reprint.html'; }
+function logout() {
+  localStorage.removeItem('loggedInUser');
+  window.location.href = 'login.html';
+}
+
+// Initialize dashboard
+async function initDashboard() {
+  await loadCurrentShift();
+  await loadTotals();
+  await loadPendingUpdates();
+}
+
+// Refresh shift, totals, and pending updates every 30 seconds
+setInterval(async () => {
+  await loadCurrentShift();
+  await loadTotals();
+  await loadPendingUpdates();
+}, 30000);
+
+initDashboard();
+</script>
+
+</body>
+</html>

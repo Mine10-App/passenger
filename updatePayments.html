@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Inline Update Non-Cash Transactions</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="fire2.js"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<style>
+:root {
+  --gold: #D4AF37;
+  --gold-light: #F5E8C8;
+  --gold-dark: #B8860B;
+  --white: #FFFFFF;
+  --light-gray: #F8F9FA;
+  --medium-gray: #E9ECEF;
+  --dark-gray: #495057;
+  --text-color: #333333;
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --border-radius: 6px;
+  --error-color: #dc3545;
+  --success-color: #28a745;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--light-gray);
+  color: var(--text-color);
+  line-height: 1.5;
+  padding: 20px;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+h1 {
+  color: var(--gold-dark);
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+h1 i {
+  color: var(--gold);
+}
+
+.dashboard-btn {
+  background: var(--gold);
+  color: var(--white);
+  padding: 10px 15px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.dashboard-btn:hover {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.card {
+  background: var(--white);
+  padding: 20px;
+  border-radius: var(--border-radius);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  border-top: 3px solid var(--gold);
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  min-width: 900px;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+th {
+  background-color: var(--gold-light);
+  color: var(--gold-dark);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+tr:hover {
+  background-color: var(--light-gray);
+}
+
+select, input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  background-color: var(--white);
+}
+
+select:focus, input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.updateBtn {
+  background: var(--success-color);
+  color: var(--white);
+}
+
+.updateBtn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.cancelBtn {
+  background: #ffc107;
+  color: var(--text-color);
+}
+
+.cancelBtn:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+/* Notification */
+#notification {
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--success-color);
+  color: var(--white);
+  padding: 15px 25px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-weight: 600;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(-20px);
+}
+
+#notification.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: var(--dark-gray);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: var(--dark-gray);
+}
+
+.empty-state i {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: var(--medium-gray);
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 15px;
+    font-size: 13px;
+  }
+  
+  .container {
+    max-width: 100%;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  th, td {
+    padding: 10px 12px;
+  }
+  
+  .actions-cell {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  #notification {
+    right: 15px;
+    left: 15px;
+    text-align: center;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-credit-card"></i> Non-Cash Transactions Missing Approval/Batch</h1>
+    <a href="dashboardP.html" class="dashboard-btn">
+      <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+  </div>
+  
+  <div class="card">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Receipt</th>
+            <th>Passenger</th>
+            <th>Flight</th>
+            <th>Currency</th>
+            <th>Total</th>
+            <th>Payment Type</th>
+            <th>Approval Code</th>
+            <th>Batch No</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="transactionBody">
+          <tr><td colspan="9" class="loading">Loading transactions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="notification"></div>
+
+<script>
+const tbody = document.getElementById("transactionBody");
+const notification = document.getElementById("notification");
+
+function showNotification(message) {
+  notification.textContent = message;
+  notification.classList.add("show");
+  setTimeout(() => {
+    notification.classList.remove("show");
+  }, 1800);
+}
+
+async function fetchTransactions() {
+  tbody.innerHTML = "<tr><td colspan='9' class='loading'>Loading transactions...</td></tr>";
+  const snapshot = await db.collection("payments").where("paymentType", "!=", "Cash").get();
+  tbody.innerHTML = "";
+
+  if(snapshot.empty) {
+    tbody.innerHTML = "<tr><td colspan='9' class='empty-state'><i class='fas fa-inbox'></i><br>No transactions found.</td></tr>";
+    return;
+  }
+
+  let hasMissingData = false;
+
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    if(!data.approvalCode || !data.batchNo) {
+      hasMissingData = true;
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${data.receiptNo}</td>
+        <td>${data.passenger || ""}</td>
+        <td>${data.flight || ""}</td>
+        <td>${data.currency || ""}</td>
+        <td>${data.currency === "USD" ? "$" : "MVR "}${(data.total||0).toFixed(2)}</td>
+        <td>
+          <select class="paymentType">
+            <option value="Cash">Cash</option>
+            <option value="Card">Card</option>
+            <option value="Amex">Amex</option>
+            <option value="Visa">Visa</option>
+            <option value="Master">Master</option>
+            <option value="Union Pay">Union Pay</option>
+            <option value="QR Sale">QR Sale</option>
+          </select>
+        </td>
+        <td><input type="text" class="approvalCode" value="${data.approvalCode || ""}"></td>
+        <td><input type="text" class="batchNo" value="${data.batchNo || ""}"></td>
+        <td class="actions-cell">
+          <button class="updateBtn"><i class="fas fa-print"></i> Update & Print</button>
+          <button class="cancelBtn"><i class="fas fa-save"></i> Update Only</button>
+        </td>
+      `;
+
+      tr.querySelector(".paymentType").value = data.paymentType || "Card";
+
+      // Update & Print button → redirect to receipt.html
+      tr.querySelector(".updateBtn").addEventListener("click", async () => {
+        const newPaymentType = tr.querySelector(".paymentType").value;
+        const newApprovalCode = tr.querySelector(".approvalCode").value || null;
+        const newBatchNo = tr.querySelector(".batchNo").value || null;
+
+        try {
+          await db.collection("payments").doc(doc.id).update({
+            paymentType: newPaymentType,
+            approvalCode: newApprovalCode,
+            batchNo: newBatchNo
+          });
+
+          showNotification(`Transaction ${data.receiptNo} updated! Redirecting to receipt...`);
+
+          // Save receiptNo in sessionStorage for receipt.html
+          sessionStorage.setItem('lastReceiptNo', data.receiptNo);
+
+          setTimeout(() => {
+            window.location.href = 'receipt.html';
+          }, 1200);
+
+        } catch(err) {
+          console.error("Update failed:", err);
+          alert("Failed to update transaction. Check console for details.");
+        }
+      });
+
+      // Update Only button → update without printing
+      tr.querySelector(".cancelBtn").addEventListener("click", async () => {
+        const newPaymentType = tr.querySelector(".paymentType").value;
+        const newApprovalCode = tr.querySelector(".approvalCode").value || null;
+        const newBatchNo = tr.querySelector(".batchNo").value || null;
+
+        try {
+          await db.collection("payments").doc(doc.id).update({
+            paymentType: newPaymentType,
+            approvalCode: newApprovalCode,
+            batchNo: newBatchNo
+          });
+
+          showNotification(`Transaction ${data.receiptNo} updated successfully!`);
+          fetchTransactions(); // refresh table
+
+        } catch(err) {
+          console.error("Update failed:", err);
+          alert("Failed to update transaction. Check console for details.");
+        }
+      });
+
+      tbody.appendChild(tr);
+    }
+  });
+
+  if(!hasMissingData) {
+    tbody.innerHTML = "<tr><td colspan='9' class='empty-state'><i class='fas fa-check-circle'></i><br>All transactions have approval and batch numbers.</td></tr>";
+  }
+}
+
+// Initial fetch
+fetchTransactions();
+</script>
+</body>
+</html>
