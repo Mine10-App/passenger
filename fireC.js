@@ -1,12 +1,13 @@
 var firebaseConfigCard = {
-  apiKey: "AIzaSyCLme7iTKJgek-jI7HIM-978Ln2i2w5E5A",
-  authDomain: "cardentry-7bad1.firebaseapp.com",
-  projectId: "cardentry-7bad1",
-  storageBucket: "cardentry-7bad1.firebasestorage.app",
-  messagingSenderId: "501968962957",
-  appId: "1:501968962957:web:2b1588b3968688d35669c4",
-  measurementId: "G-Y5NGGZ4WXD"
+  apiKey: "AIzaSyB2JTBAGNR64d_yRN4g8q9d1GpMfiiHxkE",
+  authDomain: "kcardentry.firebaseapp.com",
+  projectId: "kcardentry",
+  storageBucket: "kcardentry.firebasestorage.app",
+  messagingSenderId: "897372470233",
+  appId: "1:897372470233:web:e672fc3683b4985b7b37c8",
+  measurementId: "G-B2D7VLDT9X"
 };
 
 firebase.initializeApp(firebaseConfigCard);
+
 var db = firebase.firestore();
