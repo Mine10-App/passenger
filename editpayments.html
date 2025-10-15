@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Void / Edit Receipt</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #8c6d1f;
+      --primary-light: #a6852d;
+      --secondary: #d4af37;
+      --accent: #c19a1b;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --light: #ffffff;
+      --dark: #5d4d0f;
+      --gray: #8a7c4a;
+      --border: #e0d6b3;
+      --shadow: 0 4px 6px rgba(140, 109, 31, 0.1);
+      --radius: 8px;
+      --transition: all 0.3s ease;
+      --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      --gradient-success: linear-gradient(135deg, var(--success) 0%, #2ecc71 100%);
+      --gradient-danger: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f9f5e7 0%, #fefefe 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: var(--light);
+      padding: 30px;
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(140, 109, 31, 0.15);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--gradient-primary);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .header h1 {
+      color: var(--primary);
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      position: relative;
+    }
+
+    .header h1::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 3px;
+      background: var(--gradient-primary);
+      margin: 10px auto 0;
+      border-radius: 2px;
+    }
+
+    .header p {
+      color: var(--gray);
+      font-size: 1.1rem;
+      margin-top: 15px;
+    }
+
+    .search-section {
+      background: linear-gradient(135deg, #fef8e7 0%, #f9f5e7 100%);
+      padding: 25px;
+      border-radius: var(--radius);
+      margin-bottom: 25px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .search-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .search-title div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-dashboard {
+      background: var(--primary);
+      color: var(--light);
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-dashboard:hover {
+      background: var(--secondary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(140, 109, 31, 0.15);
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 12px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 12px 15px;
+      font-size: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--light);
+      transition: var(--transition);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-search {
+      background: var(--gradient-primary);
+      color: var(--light);
+    }
+
+    .btn-search:hover {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(140, 109, 31, 0.15);
+    }
+
+    .receipt-details {
+      background: var(--light);
+      border-radius: var(--radius);
+      padding: 0;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .receipt-header {
+      background: var(--gradient-primary);
+      color: var(--light);
+      padding: 15px 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+    }
+
+    .receipt-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .receipt-table th, .receipt-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .receipt-table th {
+      background: #fef8e7;
+      color: var(--dark);
+      font-weight: 600;
+      width: 200px;
+      border-right: 1px solid var(--border);
+    }
+
+    .receipt-table input, .receipt-table select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--light);
+      transition: var(--transition);
+      font-family: inherit;
+    }
+
+    .receipt-table input:focus, .receipt-table select:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+
+    .status-active {
+      color: var(--success);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-voided {
+      color: var(--danger);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 25px;
+      flex-wrap: wrap;
+    }
+
+    .btn-update {
+      background: var(--gradient-success);
+      color: var(--light);
+    }
+
+    .btn-update:hover {
+      background: linear-gradient(135deg, #2ecc71 0%, var(--success) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(39, 174, 96, 0.15);
+    }
+
+    .btn-void {
+      background: var(--gradient-danger);
+      color: var(--light);
+    }
+
+    .btn-void:hover {
+      background: linear-gradient(135deg, #c0392b 0%, var(--danger) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(231, 76, 60, 0.15);
+    }
+
+    .reason-box {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, #fef8e7 0%, #f9f5e7 100%);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .reason-box label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .reason-box textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 80px;
+      resize: vertical;
+      background: var(--light);
+      transition: var(--transition);
+      font-family: inherit;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .reason-box textarea:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .message-info {
+      background: rgba(212, 175, 55, 0.1);
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+
+    .message-error {
+      background: rgba(231, 76, 60, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(231, 76, 60, 0.3);
+    }
+
+    .message-success {
+      background: rgba(39, 174, 96, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(39, 174, 96, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+      
+      .search-bar {
+        flex-direction: column;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .receipt-table th, .receipt-table td {
+        padding: 10px;
+        display: block;
+        width: 100%;
+      }
+      
+      .receipt-table th {
+        background: #f9f5e7;
+        border-bottom: none;
+        padding-bottom: 5px;
+        border-right: none;
+      }
+      
+      .receipt-table td {
+        padding-top: 5px;
+        padding-bottom: 15px;
+      }
+      
+      .search-title {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-edit"></i> Void / Edit Receipt</h1>
+      <p>Supervisor access required for receipt management</p>
+    </div>
+
+    <div class="search-section">
+      <div class="search-title">
+        <div>
+          <i class="fas fa-receipt"></i>
+          <span>Search Receipt</span>
+        </div>
+        <a href="dashboard.html" class="btn-dashboard">
+          <i class="fas fa-home"></i> Dashboard
+        </a>
+      </div>
+      <div class="search-bar">
+        <input type="number" id="receiptInput" class="search-input" placeholder="Enter Receipt Number">
+        <button class="btn btn-search" onclick="searchReceipt()">
+          <i class="fas fa-search"></i> Search Receipt
+        </button>
+      </div>
+    </div>
+
+    <div id="receiptDetails"></div>
+    <div class="message message-info" id="message">
+      <i class="fas fa-info-circle"></i> Enter a receipt number to search
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="fire2.js"></script>
+
+  <script>
+    // 🔐 Supervisor Access Check
+    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (!loggedInUser || loggedInUser.Level !== "Supervisor") {
+      alert("Access denied! Only Supervisors can access this page.");
+      window.location.href = "dashboard.html";
+    }
+
+    const receiptInput = document.getElementById("receiptInput");
+    const receiptDetails = document.getElementById("receiptDetails");
+    const message = document.getElementById("message");
+
+    let currentDocId = null;
+    let currentData = null;
+
+    async function searchReceipt() {
+      const receiptNo = receiptInput.value.trim();
+      if (!receiptNo) {
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a receipt number';
+        message.className = "message message-error";
+        return;
+      }
+
+      message.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+      message.className = "message message-info";
+      receiptDetails.innerHTML = "";
+
+      try {
+        const snapshot = await db.collection("payments")
+          .where("receiptNo", "==", Number(receiptNo))
+          .get();
+
+        if (snapshot.empty) {
+          message.innerHTML = '<i class="fas fa-exclamation-circle"></i> No receipt found with that number.';
+          message.className = "message message-error";
+          return;
+        }
+
+        const doc = snapshot.docs[0];
+        currentDocId = doc.id;
+        currentData = doc.data();
+
+        message.innerHTML = "";
+        message.className = "";
+        renderReceiptForm(currentData);
+      } catch (err) {
+        console.error("Error searching receipt:", err);
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + err.message;
+        message.className = "message message-error";
+      }
+    }
+
+    function renderReceiptForm(data) {
+      receiptDetails.innerHTML = `
+        <div class="receipt-details">
+          <div class="receipt-header">
+            <i class="fas fa-file-invoice"></i>
+            <span>Receipt Details</span>
+          </div>
+          <table class="receipt-table">
+            <tr>
+              <th>Receipt No</th>
+              <td><input id="edit_receiptNo" type="number" value="${data.receiptNo}" disabled></td>
+            </tr>
+            <tr>
+              <th>Name</th>
+              <td><input id="edit_name" type="text" value="${data.name || ''}"></td>
+            </tr>
+            <tr>
+              <th>Flight</th>
+              <td><input id="edit_flight" type="text" value="${data.flight || ''}"></td>
+            </tr>
+            <tr>
+              <th>Adult</th>
+              <td><input id="edit_adults" type="text" value="${data.adults || ''}"></td>
+            </tr>
+            <tr>
+              <th>Kids</th>
+              <td><input id="edit_kids" type="text" value="${data.kids || ''}"></td>
+            </tr>
+            <tr>
+              <th>Payment Type</th>
+              <td><input id="edit_paymentType" type="text" value="${data.paymentType || ''}"></td>
+            </tr>
+            <tr>
+              <th>Currency</th>
+              <td><input id="edit_currency" type="text" value="${data.currency || ''}"></td>
+            </tr>
+            <tr>
+              <th>GST</th>
+              <td><input id="edit_gst" type="number" step="0.01" value="${data.gst || 0}"></td>
+            </tr>
+            <tr>
+              <th>Total</th>
+              <td><input id="edit_total" type="number" step="0.01" value="${data.total || 0}"></td>
+            </tr>
+            <tr>
+              <th>Shift</th>
+              <td><input id="edit_shift" type="text" value="${data.shift || ''}"></td>
+            </tr>
+            <tr>
+              <th>Batch No</th>
+              <td><input id="edit_batch" type="text" value="${data.batchNo || ''}"></td>
+            </tr>
+            <tr>
+              <th>Approval Code</th>
+              <td><input id="edit_approval" type="text" value="${data.approvalCode || ''}"></td>
+            </tr>
+            <tr>
+              <th>Status</th>
+              <td class="${data.voided ? 'status-voided' : 'status-active'}">
+                ${data.voided ? '<i class="fas fa-ban"></i> Voided' : '<i class="fas fa-check-circle"></i> Active'}
+              </td>
+            </tr>
+            ${data.voided && data.voidReason ? `
+            <tr>
+              <th>Void Reason</th>
+              <td>${data.voidReason}</td>
+            </tr>
+            ` : ""}
+          </table>
+        </div>
+        ${!data.voided ? `
+          <div class="action-buttons">
+            <button class="btn btn-update" onclick="updateReceipt()">
+              <i class="fas fa-save"></i> Update Receipt
+            </button>
+          </div>
+          <div class="reason-box">
+            <label for="voidReason"><i class="fas fa-exclamation-triangle"></i> Void Reason:</label>
+            <textarea id="voidReason" placeholder="Enter reason for voiding this receipt"></textarea>
+            <div class="action-buttons">
+              <button class="btn btn-void" onclick="voidReceipt()">
+                <i class="fas fa-ban"></i> Void Receipt
+              </button>
+            </div>
+          </div>
+        ` : ""}
+      `;
+    }
+
+    async function updateReceipt() {
+      if (!currentDocId) {
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> No receipt loaded';
+        message.className = "message message-error";
+        return;
+      }
+
+      const updatedData = {
+        name: document.getElementById("edit_name").value.trim(),
+        flight: document.getElementById("edit_flight").value.trim(),
+        adults: document.getElementById("edit_adults").value.trim(),
+        kids: document.getElementById("edit_kids").value.trim(),
+        paymentType: document.getElementById("edit_paymentType").value.trim(),
+        currency: document.getElementById("edit_currency").value.trim(),
+        gst: Number(document.getElementById("edit_gst").value),
+        total: Number(document.getElementById("edit_total").value),
+        shift: document.getElementById("edit_shift").value.trim(),
+        batchNo: document.getElementById("edit_batch").value.trim(),
+        approvalCode: document.getElementById("edit_approval").value.trim(),
+        updatedAt: new Date(),
+        updatedBy: loggedInUser.name || loggedInUser.username
+      };
+
+      try {
+        await db.collection("payments").doc(currentDocId).update(updatedData);
+        message.innerHTML = '<i class="fas fa-check-circle"></i> Receipt updated successfully!';
+        message.className = "message message-success";
+        searchReceipt(); // reload
+      } catch (err) {
+        console.error("Error updating receipt:", err);
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error updating receipt: ' + err.message;
+        message.className = "message message-error";
+      }
+    }
+
+    async function voidReceipt() {
+      if (!currentDocId) {
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> No receipt loaded';
+        message.className = "message message-error";
+        return;
+      }
+      
+      const reason = document.getElementById("voidReason").value.trim();
+      if (!reason) {
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a reason for voiding.';
+        message.className = "message message-error";
+        return;
+      }
+
+      if (!confirm("Are you sure you want to void this receipt? This action cannot be undone.")) return;
+
+      try {
+        await db.collection("payments").doc(currentDocId).update({
+          voided: true,
+          voidReason: reason,
+          voidedBy: loggedInUser.name || loggedInUser.username,
+          updatedAt: new Date()
+        });
+
+        message.innerHTML = '<i class="fas fa-check-circle"></i> Receipt voided successfully!';
+        message.className = "message message-success";
+        searchReceipt();
+      } catch (err) {
+        console.error("Error voiding receipt:", err);
+        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error voiding receipt: ' + err.message;
+        message.className = "message message-error";
+      }
+    }
+
+    // Allow Enter key to trigger search
+    receiptInput.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        searchReceipt();
+      }
+    });
+  </script>
+</body>
+</html>
