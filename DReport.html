@@ -1,21 +1,305 @@
-var firebaseConfigWalkin = {
-  apiKey: "AIzaSyCMOPJnK_qpUZcHUWi6EQz-qclrNsDky3U",
-  authDomain: "psysko-8d035.firebaseapp.com",
-  projectId: "psysko-8d035",
-  storageBucket: "psysko-8d035.firebasestorage.app",
-  messagingSenderId: "176989826632",
-  appId: "1:176989826632:web:bae58e639edbd8d4adf27d",
-  measurementId: "G-XL5YJR6L74"
-};
-
-
-// ✅ Check if the secondary app already exists
-// ✅ Initialize secondary app
-var walkinApp = firebase.apps.find(app => app.name === "walkinApp");
-if (!walkinApp) {
-  walkinApp = firebase.initializeApp(firebaseConfigWalkin, "walkinApp");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Sales Report</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --primary: #8c6d1f;
+  --secondary: #d4af37;
+  --accent: #c19a1b;
+  --light: #ffffff;
+  --dark: #5d4d0f;
+  --border: #e0d6b3;
+  --shadow: 0 4px 6px rgba(140, 109, 31, 0.1);
+  --radius: 8px;
+  --transition: all 0.3s ease;
 }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #fefefe;
+  color: var(--dark);
+  line-height: 1.6;
+  padding: 20px;
+  min-height: 100vh;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 30px; padding: 20px; background: white; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border);}
+.header h1 { color: var(--primary); font-weight: 700; margin-bottom: 8px; font-size: 32px;}
+.header p { color: #8a7c4a; font-size: 16px;}
+.controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; padding: 20px; background: white; border-radius: var(--radius); box-shadow: var(--shadow); flex-wrap: wrap; border: 1px solid var(--border);}
+.date-control { display: flex; align-items: center; gap: 10px; }
+.date-control label { font-weight: 600; color: var(--dark);}
+.date-control input, .date-control select { padding: 10px 15px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 16px; background-color: #fefcf5;}
+.date-control input:focus, .date-control select:focus { outline: none; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);}
+.btn { padding: 12px 24px; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 8px; border: 1px solid var(--secondary);}
+.btn:hover { background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(140, 109, 31, 0.15);}
+.btn-print { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);}
+.btn-print:hover { background: linear-gradient(135deg, #219653 0%, #27ae60 100%);}
+.report-container { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 30px; display: none; border: 1px solid var(--border);}
+.report-header { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; padding: 25px; text-align: center;}
+.report-header h2 { margin-bottom: 10px; font-weight: 700; font-size: 28px;}
+.report-header p { font-size: 16px; opacity: 0.9;}
+.report-body { padding: 30px;}
+.report-section { margin-bottom: 30px;}
+.report-section h3 { color: var(--primary); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; font-size: 22px;}
+.report-section h3 i { font-size: 24px; color: var(--secondary);}
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; box-shadow: 0 2px 4px rgba(140, 109, 31, 0.05);}
+th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border);}
+th { background: #fef8e7; font-weight: 600; color: var(--dark); position: sticky; top: 0;}
+tr:hover { background: #fef8e7;}
+.voided { color: #e74c3c; font-weight: bold;}
+.status-active { color: #27ae60; font-weight: 600;}
+.summary { 
+  margin-top: 30px; 
+  padding: 12px 15px; 
+  background: #fef8e7; 
+  border-radius: var(--radius); 
+  border-left: 4px solid var(--secondary);
+  font-size: 13px;
+}
+.summary h3 { 
+  color: var(--primary); 
+  margin-bottom: 10px; 
+  font-size: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.summary div { 
+  margin-bottom: 6px; 
+  font-weight: 600; 
+  padding: 4px 0; 
+  border-bottom: 1px dashed var(--border);
+  display: flex;
+  justify-content: space-between;
+}
+.summary div:last-child { border-bottom: none;}
+.loading { text-align: center; padding: 40px; color: #8a7c4a;}
+.loading i { font-size: 36px; margin-bottom: 15px; color: var(--secondary);}
+.empty-state { text-align: center; padding: 50px; color: #8a7c4a;}
+.empty-state i { font-size: 48px; margin-bottom: 15px; color: #e0d6b3;}
+.empty-state p { font-size: 18px;}
+.table-container {
+  overflow-x: auto;
+  margin-top: 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+@media print {
+  body { background: white; padding: 0; margin: 0; }
+  .container { max-width: 100%; margin: 0; padding: 0; }
+  .header, .controls { display: none; }
+  .report-container { display: block !important; box-shadow: none; margin: 0; width: 100%; border: none; page-break-inside: avoid;}
+  .report-header { background: white !important; color: black; border-bottom: 2px solid #000; padding: 15px;}
+  .report-header h2 { color: black; font-size: 24px; }
+  .report-header p { color: black; font-size: 14px; }
+  .report-body { padding: 15px; }
+  .report-section h3 { font-size: 18px; }
+  table { box-shadow: none; font-size: 10px; page-break-inside: auto;}
+  th, td { padding: 6px 8px; }
+  th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; color-adjust: exact; font-size: 10px;}
+  .summary { background: #f0f0f0 !important; border-left: 4px solid #000 !important; padding: 8px 10px; font-size: 11px; margin-top: 20px; }
+  .summary h3 { font-size: 14px; margin-bottom: 8px; padding-bottom: 6px; }
+  .summary div { margin-bottom: 4px; padding: 3px 0; }
+  .btn { display: none; }
+  .passenger-col, .seat-col, .level-col, .voided-col { display: none; }
+  .has-voided .voided-col { display: table-cell; }
+  table { width: 100%; table-layout: fixed; word-wrap: break-word; }
+}
+.screen-only { display: block; }
+@media print { .screen-only { display: none; } }
+</style>
+</head>
+<body>
 
-window.walkinDb = walkinApp.firestore();
+<div class="container">
+  <div class="header">
+    <h1 id="companyName">Loading...</h1>
+    <p>Daily Sales Report - Generate and analyze daily sales performance</p>
+  </div>
 
-console.log("✅ Walk-in DB (walkinApp) initialized");
+  <div class="controls">
+    <div class="date-control">
+      <label for="reportDate"><i class="fas fa-calendar-alt"></i> Select Date:</label>
+      <input type="date" id="reportDate">
+    </div>
+    
+    <div class="date-control">
+      <label for="shiftSelect"><i class="fas fa-clock"></i> Select Shift:</label>
+      <select id="shiftSelect">
+        <option value="">All Shifts</option>
+        <option value="Morning">Morning</option>
+        <option value="Evening">Evening</option>
+      </select>
+    </div>
+
+    <button id="generateBtn" class="btn"><i class="fas fa-chart-line"></i> Generate Report</button>
+    <button onclick="printReport()" class="btn btn-print"><i class="fas fa-print"></i> Print Report</button>
+  </div>
+
+  <div class="report-container" id="reportContainer">
+    <div class="report-header">
+      <h2 id="reportTitle">Daily Sales Report</h2>
+      <p id="reportDateText"></p>
+    </div>
+
+    <div class="report-body">
+      <div class="report-section">
+        <h3><i class="fas fa-receipt"></i> Receipts</h3>
+        <div class="table-container">
+          <table id="receiptsTable">
+            <thead>
+              <tr>
+                <th>Receipt No</th>
+                <th class="passenger-col">Passenger</th>
+                <th>Flight</th>
+                <th class="seat-col">Seat</th>
+                <th>Adults</th>
+                <th>Kids</th>
+                <th>Total</th>
+                <th>Payment Type</th>
+                <th>Currency</th>
+                <th>Shift</th>
+                <th>User</th>
+                <th class="level-col">Level</th>
+                <th class="voided-col">Voided Reason</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="summary" id="summaryDiv"></div>
+    </div>
+  </div>
+</div>
+
+<script src="Co.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById("companyName").innerText = companyInfo.name || "Daily Sales Report";
+});
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="fireW.js"></script>
+
+<script>
+const reportDateInput = document.getElementById("reportDate");
+const generateBtn = document.getElementById("generateBtn");
+const shiftSelect = document.getElementById("shiftSelect");
+const reportContainer = document.getElementById("reportContainer");
+const reportTitle = document.getElementById("reportTitle");
+const reportDateText = document.getElementById("reportDateText");
+const summaryDiv = document.getElementById("summaryDiv");
+const receiptsTableBody = document.querySelector("#receiptsTable tbody");
+const receiptsTable = document.getElementById("receiptsTable");
+
+reportDateInput.value = new Date().toISOString().split('T')[0];
+
+generateBtn.addEventListener("click", async () => {
+  const selectedDate = reportDateInput.value;
+  const selectedShift = shiftSelect.value;
+  if(!selectedDate) return alert("Select a valid date");
+
+  reportContainer.style.display = "block";
+  reportTitle.innerText = `${companyInfo.name || "Company"} - Sales Report for ${selectedDate}`;
+  reportDateText.innerText = `Generated on: ${new Date().toLocaleDateString()}`;
+
+  receiptsTableBody.innerHTML = '<tr><td colspan="13" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading data...</td></tr>';
+  summaryDiv.innerHTML = '';
+
+  try {
+    const snapshot = await window.walkinDb.collection("payments").get();
+    receiptsTableBody.innerHTML = '';
+    let totals = {};
+    let totalReceipts = 0;
+    let totalAdults = 0;
+    let totalKids = 0;
+    let totalAmount = 0;
+    let hasVoidedReceipts = false;
+
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const date = data.date || '';
+      const shift = data.shift || '';
+      if(date !== selectedDate) return;
+      if(selectedShift && shift !== selectedShift) return;
+
+      const passenger = data.passenger || data.name || '-';
+      const adults = Number(data.adults) || 0;
+      const kids = Number(data.kids) || 0;
+      const total = Number(data.total || data.paidAmount || 0);
+      const paymentType = data.paymentType || '-';
+      const currency = data.currency || '-';
+      const seat = data.seat || '-';
+      const user = data.user || data.loginUser || '-';
+      const level = data.level || '-';
+      const voidedReason = data.voidReason || '';
+
+      const tr = document.createElement("tr");
+      if(voidedReason) { tr.classList.add("voided"); hasVoidedReceipts = true; }
+      tr.innerHTML = `
+        <td>${data.receiptNo}</td>
+        <td class="passenger-col">${passenger}</td>
+        <td>${data.flight || '-'}</td>
+        <td class="seat-col">${seat}</td>
+        <td>${adults}</td>
+        <td>${kids}</td>
+        <td>${total.toFixed(2)}</td>
+        <td>${paymentType}</td>
+        <td>${currency}</td>
+        <td>${shift}</td>
+        <td>${user}</td>
+        <td class="level-col">${level}</td>
+        <td class="voided-col">${voidedReason}</td>
+      `;
+      receiptsTableBody.appendChild(tr);
+
+      if(!voidedReason){
+        const key = `${paymentType} (${currency})`;
+        totals[key] = (totals[key] || 0) + total;
+        totalReceipts++;
+        totalAdults += adults;
+        totalKids += kids;
+        totalAmount += total;
+      }
+    });
+
+    if (hasVoidedReceipts) { receiptsTable.classList.add('has-voided'); } 
+    else { receiptsTable.classList.remove('has-voided'); }
+
+    summaryDiv.innerHTML = `
+      <h3>Summary (Active Receipts Only)</h3>
+      <div><span>Total Receipts:</span><span>${totalReceipts}</span></div>
+      <div><span>Total Adults:</span><span>${totalAdults}</span></div>
+      <div><span>Total Kids:</span><span>${totalKids}</span></div>
+      <div><span>Overall Total Amount:</span><span>${totalAmount.toFixed(2)}</span></div>
+    `;
+    
+    for(const key in totals){
+      summaryDiv.innerHTML += `<div><span>Total ${key}:</span><span>${totals[key].toFixed(2)}</span></div>`;
+    }
+
+    if(receiptsTableBody.children.length === 0){
+      receiptsTableBody.innerHTML = '<tr><td colspan="13" class="empty-state"><i class="fas fa-receipt"></i><p>No payments found for this date/shift</p></td></tr>';
+    }
+
+  } catch(err){
+    console.error(err);
+    receiptsTableBody.innerHTML = `<tr><td colspan="13" style="color:red; text-align:center;">Error: ${err.message}</td></tr>`;
+  }
+});
+
+function printReport(){ 
+  reportContainer.style.display = 'block';
+  window.print(); 
+}
+</script>
+</body>
+</html>
