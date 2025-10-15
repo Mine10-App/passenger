@@ -197,6 +197,10 @@
             </button>
 
             <button class="btn" id="payment-update-btn">
+                <i class="fas fa-edit"></i> edit
+            </button>
+            
+            <button class="btn" id="update-btn">
                 <i class="fas fa-edit"></i> Payment Update
             </button>
 
@@ -290,7 +294,7 @@
             document.getElementById('payment-btn').addEventListener('click', function() {
                 if (walkinDb) {
                    // alert('Opening Payment...');
-                     window.location.href = 'walkin1.html';
+                     window.location.href = 'newpayment.html';
                 } else {
                     alert('Walk-in database not available');
                 }
@@ -299,7 +303,7 @@
             document.getElementById('payment-update-btn').addEventListener('click', function() {
                 if (walkinDb) {
                    // alert('Opening Payment Update...');
-                     window.location.href = 'walkinedit.html';
+                     window.location.href = 'edit_payments.html';
                 } else {
                     alert('Walk-in database not available');
                 }
@@ -307,7 +311,15 @@
             
             document.getElementById('receipt-btn').addEventListener('click', function() {
                 if (walkinDb) {
-                    alert('Opening Receipt Print...');
+                    window.location.href = 'reprint.html';
+                } else {
+                    alert('Walk-in database not available');
+                }
+            });
+
+            document.getElementById('update-btn').addEventListener('click', function() {
+                if (walkinDb) {
+                    window.location.href =  'updatePayments.html?pending=true'; 
                 } else {
                     alert('Walk-in database not available');
                 }
@@ -342,4 +354,5 @@
 </body>
 
 </html>
+
 
