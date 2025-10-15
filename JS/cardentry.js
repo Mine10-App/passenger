@@ -840,7 +840,7 @@ function getAirline(flightNo) {
         "GA": "Garuda Indonesia",
         "QF": "Qantas",
         "NZ": "Air New Zealand",
-        "AC": "Air Canada",
+        "AI": "Air India",
         "LX": "Swiss International Air Lines",
         "OS": "Austrian Airlines",
         "SN": "Brussels Airlines",
@@ -854,7 +854,7 @@ function getAirline(flightNo) {
         "SV": "Saudia",
         "ET": "Ethiopian Airlines",
         "MS": "EgyptAir",
-        "RJ": "Royal Jordanian",
+        "G9": "Indigo",
         "OD": "Batik Air",
         "JD": "Beijing Capital Airlines",
     };
@@ -972,4 +972,5 @@ window.addEventListener('focus', () => {
 // Sync when network connection is restored
 window.addEventListener('online', () => {
     checkAndSyncLocalStorage();
+
 });
