@@ -243,7 +243,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="fire2.js"></script>
+<script src="fireW.js"></script>
 <script src="Co.js"></script>
 
 <script>
@@ -259,13 +259,35 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
+// Wait for Firebase to initialize
+function waitForFirebase() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const checkFirebase = () => {
+      attempts++;
+      if (typeof walkinDb !== 'undefined') {
+        console.log("Firebase initialized successfully");
+        resolve(walkinDb);
+      } else if (attempts < 10) {
+        console.log("Waiting for Firebase... attempt", attempts);
+        setTimeout(checkFirebase, 500);
+      } else {
+        reject(new Error("Firebase initialization timeout"));
+      }
+    };
+    checkFirebase();
+  });
+}
+
 async function fetchByDocId(id) {
+  const db = await waitForFirebase();
   const doc = await db.collection('payments').doc(id).get();
   if (!doc.exists) return null;
   return { data: doc.data(), docId: doc.id };
 }
 
 async function fetchByReceiptNo(no) {
+  const db = await waitForFirebase();
   const snap = await db.collection('payments').where('receiptNo', '==', Number(no)).limit(1).get();
   if (snap.empty) return null;
   const doc = snap.docs[0];
@@ -442,4 +464,3 @@ async function fetchByReceiptNo(no) {
 </script>
 </body>
 </html>
-
