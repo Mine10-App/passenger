@@ -346,7 +346,9 @@
     </div>
 
     <div class="footer">
-      <p>Shift Management System</p>
+      <button id="dashboardBtn" class="btn btn-close" style="display:none;">
+            <span></span> Close
+          </button>
     </div>
   </div>
 
@@ -555,9 +557,12 @@
     document.getElementById("closeShift1Btn").addEventListener("click", () => closeShift("shift1"));
     document.getElementById("openShift2Btn").addEventListener("click", () => openShift("shift2"));
     document.getElementById("closeShift2Btn").addEventListener("click", () => closeShift("shift2"));
+     document.getElementById("dashboardBtn").addEventListener("click", () => window.location.href = 'dashboard.html'; );
+
 
     // Initialize the app
     getShifts();
   </script>
 </body>
 </html>
+
