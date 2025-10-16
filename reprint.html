@@ -51,6 +51,13 @@
       background: #1e8449;
     }
     .msg { margin-top: 10px; font-size: 14px; color: #e74c3c; }
+    .btn-home {
+      background: #3498db;
+      margin-top: 10px;
+    }
+    .btn-home:hover {
+      background: #2980b9;
+    }
   </style>
 </head>
 <body>
@@ -61,7 +68,8 @@
     <button onclick="goToReceipt()">Print Receipt</button>
     <div class="msg" id="msg"></div>
     <button onclick="window.location.href='dashboardP.html'" class="btn btn-home">
-  <i class="fas fa-home"></i> Home
+      <i class="fas fa-home"></i> Home
+    </button>
   </div>
 
   <!-- Firebase -->
@@ -70,9 +78,30 @@
   <script src="fireW.js"></script>
 
   <script>
+    // Wait for Firebase to initialize
+    function waitForFirebase() {
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const checkFirebase = () => {
+          attempts++;
+          if (typeof walkinDb !== 'undefined') {
+            console.log("Firebase initialized successfully");
+            resolve(walkinDb);
+          } else if (attempts < 10) {
+            console.log("Waiting for Firebase... attempt", attempts);
+            setTimeout(checkFirebase, 500);
+          } else {
+            reject(new Error("Firebase initialization timeout"));
+          }
+        };
+        checkFirebase();
+      });
+    }
+
     async function goToReceipt() {
       const receiptNo = document.getElementById("receiptInput").value.trim();
       const msg = document.getElementById("msg");
+      msg.innerText = "";
 
       if (!receiptNo) {
         msg.innerText = "⚠️ Please enter a receipt number";
@@ -80,6 +109,10 @@
       }
 
       try {
+        // Wait for Firebase to be ready
+        const db = await waitForFirebase();
+        console.log("Searching for receipt:", receiptNo);
+
         // Find receipt in Firestore
         const snap = await db.collection("payments")
           .where("receiptNo", "==", Number(receiptNo))
@@ -92,19 +125,26 @@
         }
 
         const doc = snap.docs[0];
+        console.log("Receipt found:", doc.id);
+        
         // Save doc id to session
         sessionStorage.setItem("lastPaymentId", doc.id);
         // Redirect to receipt page
         window.location.href = "receipt.html";
 
       } catch (err) {
-        console.error(err);
+        console.error("Error:", err);
         msg.innerText = "Error: " + err.message;
       }
     }
+
+    // Add enter key support
+    document.getElementById("receiptInput").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        goToReceipt();
+      }
+    });
   </script>
 
 </body>
 </html>
-
-
