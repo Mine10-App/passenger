@@ -6,6 +6,7 @@
   <title>Void / Edit Receipt</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Your existing CSS styles remain the same */
     :root {
       --primary: #8c6d1f;
       --primary-light: #a6852d;
@@ -110,9 +111,37 @@
   </div>
 
   <!-- Firebase -->
-  <script src="fireW.js"></script> <!-- walkinDb from fireW.js -->
+   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="fireW.js"></script>
   <script>
-    const db = window.walkinDb;
+    // Wait for the database to be available
+    let db;
+    let dbInitialized = false;
+
+    // Function to initialize database
+    function initializeDatabase() {
+      if (window.walkinDb) {
+        db = window.walkinDb;
+        dbInitialized = true;
+        console.log("Database initialized successfully");
+      } else {
+        console.error("walkinDb is not available");
+        showMessage("Database connection error. Please refresh the page.", "error");
+      }
+    }
+
+    // Check if database is ready, if not wait a bit and try again
+    function waitForDatabase() {
+      if (window.walkinDb) {
+        initializeDatabase();
+      } else {
+        setTimeout(waitForDatabase, 100);
+      }
+    }
+
+    // Start waiting for database
+    waitForDatabase();
 
     // Supervisor Access
     const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
@@ -129,15 +158,19 @@
     let currentData = null;
 
     async function searchReceipt() {
-      const receiptNo = receiptInput.value.trim();
-      if (!receiptNo) {
-        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a receipt number';
-        message.className = "message message-error";
+      // Check if database is initialized
+      if (!dbInitialized) {
+        showMessage("Database is not ready yet. Please wait...", "error");
         return;
       }
 
-      message.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-      message.className = "message message-info";
+      const receiptNo = receiptInput.value.trim();
+      if (!receiptNo) {
+        showMessage("Please enter a receipt number", "error");
+        return;
+      }
+
+      showMessage('<i class="fas fa-spinner fa-spin"></i> Searching...', "info");
       receiptDetails.innerHTML = "";
 
       try {
@@ -146,8 +179,7 @@
           .get();
 
         if (snapshot.empty) {
-          message.innerHTML = '<i class="fas fa-exclamation-circle"></i> No receipt found with that number.';
-          message.className = "message message-error";
+          showMessage("No receipt found with that number.", "error");
           return;
         }
 
@@ -160,8 +192,7 @@
         renderReceiptForm(currentData);
       } catch (err) {
         console.error("Error searching receipt:", err);
-        message.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error: ' + err.message;
-        message.className = "message message-error";
+        showMessage("Error: " + err.message, "error");
       }
     }
 
@@ -250,6 +281,11 @@
     }
 
     async function updateReceipt() {
+      if (!dbInitialized) {
+        showMessage("Database is not ready yet. Please wait...", "error");
+        return;
+      }
+
       if (!currentDocId) return showMessage("No receipt loaded", "error");
 
       const updatedData = {
@@ -279,6 +315,11 @@
     }
 
     async function voidReceipt() {
+      if (!dbInitialized) {
+        showMessage("Database is not ready yet. Please wait...", "error");
+        return;
+      }
+
       if (!currentDocId) return showMessage("No receipt loaded", "error");
 
       const reason = document.getElementById("voidReason").value.trim();
@@ -302,8 +343,8 @@
     }
 
     function showMessage(msg, type) {
-      message.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
-      message.className = "message message-" + (type === 'success' ? 'success' : 'error');
+      message.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+      message.className = "message message-" + (type === 'success' ? 'success' : type === 'info' ? 'info' : 'error');
     }
 
     // Enter key triggers search
