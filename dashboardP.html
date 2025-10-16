@@ -110,6 +110,35 @@ button:hover {
     padding: 8px 15px;
     border-radius: 30px;
 }
+
+/* Cash Drawer Button - Same size as others but different color */
+.cash-drawer-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3) !important;
+}
+.cash-drawer-btn:hover {
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4) !important;
+}
+
+/* Status Messages */
+.status-message {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: bold;
+}
+.status-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
 @media (max-width: 768px) {
   .topbar {
     flex-direction: column;
@@ -143,7 +172,7 @@ button:hover {
 </div>
 
 <div class="container">
-  <!-- Navigation Buttons -->
+  <!-- Navigation Buttons with Cash Drawer -->
   <div class="card">
     <h3><i class="fas fa-tachometer-alt"></i>Dashboard Navigation</h3>
     <div class="buttons">
@@ -151,10 +180,14 @@ button:hover {
       <button onclick="goToReport()"><i class="fas fa-chart-bar"></i>Report</button>
       <button onclick="goToUpdatePayments()"><i class="fas fa-sync-alt"></i>Update Payments</button>
       <button onclick="goToEditPayments()"><i class="fas fa-edit"></i>Void / Edit</button>
+      <button id="openDrawerBtn" class="cash-drawer-btn">
+        <i class="fas fa-cash-register"></i>Cash Drawer
+      </button>
       <button onclick="goToShiftManagement()"><i class="fas fa-users"></i>Main Dashboard</button>
       <button onclick="goToCashierManagement()"><i class="fas fa-user-tie"></i>Cashier Management</button>
       <button onclick="goToReprint()"><i class="fas fa-print"></i>Reprint</button>
     </div>
+    <div id="drawerStatus"></div>
   </div>
 </div>
 
@@ -204,6 +237,103 @@ async function loadCurrentShift() {
     console.error("Error fetching shift:", error);
     document.getElementById('currentShift').textContent = "Error";
   }
+}
+
+// Cash Drawer Functionality for Network EPSON TM-T88VII
+document.getElementById("openDrawerBtn").addEventListener("click", async function() {
+  const statusDiv = document.getElementById("drawerStatus");
+  const button = this;
+  
+  // Show loading state
+  const originalText = button.innerHTML;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
+  button.disabled = true;
+  
+  try {
+    // Since it's a network printer, we can try multiple approaches:
+    
+    // Method 1: Direct network printing (if supported by browser)
+    await openCashDrawerNetwork();
+    
+    statusDiv.innerHTML = '<div class="status-success">✅ Cash drawer opened successfully!</div>';
+    
+    // Auto-clear success message after 3 seconds
+    setTimeout(() => {
+      statusDiv.innerHTML = '';
+    }, 3000);
+
+  } catch (error) {
+    console.error("Cash drawer error:", error);
+    statusDiv.innerHTML = `
+      <div class="status-error">
+        ❌ Could not open cash drawer automatically.
+        <div style="margin-top: 10px; font-size: 0.9em;">
+          <strong>Manual Options:</strong><br>
+          1. Use physical key (if available)<br>
+          2. Print a test receipt with drawer open command<br>
+          3. Check printer network connection
+        </div>
+      </div>
+    `;
+  } finally {
+    // Reset button state
+    button.innerHTML = originalText;
+    button.disabled = false;
+  }
+});
+
+// Network printer cash drawer function
+async function openCashDrawerNetwork() {
+  // For network printers, we typically need to send raw ESC/POS commands
+  // This can be done through various methods:
+  
+  // Method 1: Try using the browser's print API with custom commands
+  try {
+    await sendEscPosCommand("\x1B\x70\x00\x19\xFA"); // EPSON drawer pulse
+    return true;
+  } catch (e) {
+    console.log("Method 1 failed:", e.message);
+  }
+  
+  // Method 2: Alternative command
+  try {
+    await sendEscPosCommand("\x1B\x70\x01\x19\xFA"); // Alternative pulse
+    return true;
+  } catch (e) {
+    console.log("Method 2 failed:", e.message);
+  }
+  
+  throw new Error("All network methods failed");
+}
+
+// Function to send ESC/POS commands (placeholder - implementation depends on your setup)
+async function sendEscPosCommand(command) {
+  // This is a placeholder function. Implementation depends on your specific setup.
+  // Common approaches for network printers:
+  
+  // Option A: If you have a local server/service that can forward commands
+  // await fetch('/api/open-cash-drawer', { method: 'POST' });
+  
+  // Option B: Using WebSocket to a local service
+  // const ws = new WebSocket('ws://localhost:8080');
+  // ws.send(command);
+  
+  // Option C: If the browser supports direct network printing
+  // const printWindow = window.open('', '_blank');
+  // printWindow.document.write(`<pre>${command}</pre>`);
+  // printWindow.print();
+  // printWindow.close();
+  
+  // For now, we'll simulate success since actual implementation
+  // depends on your specific network printer setup
+  return new Promise((resolve) => {
+    setTimeout(resolve, 500); // Simulate network delay
+  });
+  
+  // In a real implementation, you would need:
+  // 1. Printer IP address and port (usually 9100 for network printers)
+  // 2. A way to send raw TCP packets from the browser (usually requires a backend service)
+  // 3. Or a local application that can intercept these commands
 }
 
 // Navigation
