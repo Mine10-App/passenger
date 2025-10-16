@@ -282,8 +282,6 @@
         </div>
     </header>
 
-    
-
     <div class="main-content">
         <!-- Passenger Entry Card - Left Side -->
         <div class="card passenger-form-card">
@@ -864,8 +862,8 @@ function parseQR(code) {
         }
 
         // ----- REMOVE LAST 6 CHARACTERS FROM NAME -----
-        if (name.length > 6) {
-            name = name.substring(0, name.length - 6).trim();
+        if (name.length > 7) {
+            name = name.substring(0, name.length - 7).trim();
         }
 
         // ----- FLIGHT / SEAT -----
@@ -890,16 +888,16 @@ function parseQR(code) {
     return { name, flightNo, seatNo, fqtv };
 }
 
-// ---------- FQTV DETECTOR ----------
+// ---------- FQTV DETECTOR (IMPROVED) ----------
 function detectFQTVDynamic(parts, flightNo) {
     if (!flightNo || flightNo.length < 2) return "";
     
     const airlineCode = flightNo.substring(0, 2).toUpperCase();
     let fqtv = "";
 
-    // Method 1: Look for airline code followed by numbers
+    // Method 1: Look for airline code followed by numbers (with space)
     for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === airlineCode && /^\d+$/.test(parts[i + 1] || "")) {
+        if (parts[i] === airlineCode && i + 1 < parts.length && /^\d+$/.test(parts[i + 1])) {
             fqtv = `${airlineCode}-${parts[i + 1]}`;
             
             // Check for status codes
@@ -913,23 +911,36 @@ function detectFQTVDynamic(parts, flightNo) {
         }
     }
 
-    // Method 2: Look for FQTV patterns in the text
-    if (!fqtv) {
-        const fqtvPattern = new RegExp(`${airlineCode}\\s*(\\d+)`, 'i');
-        const match = parts.join(' ').match(fqtvPattern);
-        if (match) {
-            fqtv = `${airlineCode}-${match[1]}`;
-        }
-    }
-
-    // Method 3: Look for common FQTV formats
+    // Method 2: Look for airline code immediately followed by numbers (no space)
     if (!fqtv) {
         for (let part of parts) {
             // Pattern: XX123456789 (airline code followed by numbers)
-            const pattern = /^([A-Z]{2})(\d{6,12})$/;
-            const match = part.match(pattern);
-            if (match && match[1] === airlineCode) {
-                fqtv = `${match[1]}-${match[2]}`;
+            const pattern = new RegExp(`^${airlineCode}\\d{6,12}$`);
+            if (pattern.test(part)) {
+                fqtv = `${airlineCode}-${part.substring(2)}`;
+                break;
+            }
+        }
+    }
+
+    // Method 3: Look for common FQTV formats with separators
+    if (!fqtv) {
+        for (let part of parts) {
+            // Pattern: XX-123456789 or XX/123456789
+            const pattern = new RegExp(`^${airlineCode}[-/]\\d{6,12}$`);
+            if (pattern.test(part)) {
+                fqtv = part;
+                break;
+            }
+        }
+    }
+
+    // Method 4: Look for long numeric strings that could be FQTV numbers
+    if (!fqtv) {
+        for (let part of parts) {
+            // Look for long numeric strings (8+ digits)
+            if (/^\d{8,12}$/.test(part)) {
+                fqtv = `${airlineCode}-${part}`;
                 break;
             }
         }
@@ -1126,7 +1137,7 @@ function getAirline(flightNo){
         "IB": "Iberia",
         "Q2": "Maldivian",
         "SV": "Saudia",
-        "ET": "Ethiopian Airlines",
+        "GF": "Gulf Air",
         "MS": "EgyptAir",
         "RJ": "Royal Jordanian",
         "OD": "Batik Air",
@@ -1174,6 +1185,7 @@ qrInput.addEventListener("change", () => {
         airlineField.value = getAirline(parsed.flightNo);
     }
     if(parsed.seatNo) seatField.value = parsed.seatNo;
+    if(parsed.fqtv) document.getElementById("fqtv").value = parsed.fqtv;
     
     setTimeout(() => {
         addPassengerAutomatically();
@@ -1227,5 +1239,4 @@ db.collection("passengers")
     });
 </script>
 </body>
-
 </html>
