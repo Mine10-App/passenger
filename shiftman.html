@@ -354,7 +354,11 @@
 
   <!-- Notification System -->
   <div id="notification" class="notification"></div>
-
+<script>
+  document.getElementById("dashboardBtn").addEventListener("click", function() {
+    window.location.href = "dashboard.html";
+  });
+</script>
   <script>
     let shiftDocId = null;
 
@@ -557,7 +561,7 @@
     document.getElementById("closeShift1Btn").addEventListener("click", () => closeShift("shift1"));
     document.getElementById("openShift2Btn").addEventListener("click", () => openShift("shift2"));
     document.getElementById("closeShift2Btn").addEventListener("click", () => closeShift("shift2"));
-     document.getElementById("dashboardBtn").addEventListener("click", () => window.location.href = 'dashboard.html'; );
+    
 
 
     // Initialize the app
@@ -565,4 +569,5 @@
   </script>
 </body>
 </html>
+
 
