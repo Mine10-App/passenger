@@ -385,6 +385,9 @@ tfoot td {
                 </svg>
                 Print / Save PDF
             </button>
+            <button id="dashboard" class="btn btn-secondary">
+                Dashboard
+            </button>
         </div>
 
         <div id="reportArea">
@@ -418,6 +421,7 @@ const reportDateInput = document.getElementById("reportDateInput");
 const shiftSelect = document.getElementById("shiftSelect");
 const fetchReportBtn = document.getElementById("fetchReportBtn");
 const printBtn = document.getElementById("printBtn");
+const dashboardBtn = document.getElementById("dashboard");
 const reportDateEl = document.getElementById("reportDate");
 const companyNameEl = document.getElementById("companyName");
 const shiftNameEl = document.getElementById("shiftName");
@@ -516,6 +520,13 @@ printBtn.addEventListener("click", ()=>{
     document.body.innerHTML = originalContents;
     window.location.reload();
 });
+
+// ---------- Dashboard Btn ----------
+dashboardBtn.addEventListener("click", ()=>{
+   window.location.href = 'dashboard.html'; 
+    
+});
 </script>
 </body>
+
 </html>
