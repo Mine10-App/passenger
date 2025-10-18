@@ -454,6 +454,7 @@ input[readonly] {
 // ------------------- DOM & USER -------------------
 const shiftsRef = firebase.firestore().collection("shifts"); // from fireC.js
 const paymentsRef = window.walkinDb.collection("payments"); // from fireW.js
+
 const loggedUser = JSON.parse(localStorage.getItem('loggedInUser'));
 const userNameField = document.getElementById('userNameField');
 const userLevelField = document.getElementById('userLevelField');
@@ -483,23 +484,38 @@ if(!loggedUser){
 }
 userNameField.textContent = loggedUser.name;
 userLevelField.textContent = loggedUser.Level;
-dateField.textContent = new Date().toISOString().split('T')[0];
+
+// Format date to match Firestore: MM/DD/YYYY
+function getFormattedDateMMDDYYYY(d = new Date()) {
+    const mm = String(d.getMonth() + 1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+}
+const todayFormatted = getFormattedDateMMDDYYYY();
+dateField.textContent = todayFormatted;
+
+// Disable rate selection if user is not supervisor
 if(loggedUser.Level.toLowerCase()!=="supervisor") rateSelect.disabled=true;
 
 // ------------------- CURRENT SHIFT -------------------
 async function fetchCurrentShift(){
-    const today = new Date().toISOString().split('T')[0];
-    const snapshot = await shiftsRef.where("date","==",today).get();
-    let shiftName = "No shift open";
-    if(!snapshot.empty){
-        const data = snapshot.docs[0].data();
-        if(data.shift1?.status==="Open") shiftName = "Morning";
-        else if(data.shift2?.status==="Open") shiftName = "Afternoon";
+    try {
+        const snapshot = await shiftsRef.where("date","==",todayFormatted).get();
+        let shiftName = "No shift open";
+        if(!snapshot.empty){
+            const data = snapshot.docs[0].data();
+            if(data.shift1?.status==="Open") shiftName = "Morning";
+            else if(data.shift2?.status==="Open") shiftName = "Afternoon";
+        }
+        shiftField.textContent = shiftName;
+    } catch(err){
+        console.error("Error fetching shift:", err);
+        shiftField.textContent = "Error";
     }
-    shiftField.textContent = shiftName;
 }
 fetchCurrentShift();
-setInterval(fetchCurrentShift,30000);
+setInterval(fetchCurrentShift, 30000); // refresh every 30s
 
 // ------------------- QR PARSER -------------------
 function parseQR(code){
@@ -595,6 +611,7 @@ function updateBalance(){
 paymentTypeSelect.addEventListener("change",calculateTotals);
 window.addEventListener('load',()=>{if(typeof rates!=="undefined") calculateTotals(); else setTimeout(calculateTotals,100);});
 
+// ------------------- PAYMENT SAVE -------------------
 let lastReceiptNo=0, isProcessing=false;
 async function getLastReceiptNo(){
     const snapshot = await paymentsRef.orderBy("receiptNo","desc").limit(1).get();
@@ -602,7 +619,6 @@ async function getLastReceiptNo(){
 }
 getLastReceiptNo();
 
-// ------------------- SAVE PAYMENT -------------------
 saveBtn.addEventListener("click", async ()=>{
     if(isProcessing){ alert("Payment is already being processed. Please wait."); return; }
     isProcessing=true;
@@ -644,6 +660,7 @@ saveBtn.addEventListener("click", async ()=>{
     }
 });
 </script>
+
 
 </body>
 </html>
