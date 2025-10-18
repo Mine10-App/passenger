@@ -192,11 +192,8 @@ button:hover {
 </div>
 
 <script>
-// ✅ Use Firestore from fireC.js (default app)
-const dbShift = firebase.firestore(); // default app from fireC.js
-
-// Collections
-const shiftsRef = dbShift.collection("shifts");
+// ✅ Use Firestore from fireC.js (Shift DB)
+const dbShift = db; // `db` comes from fireC.js
 
 // Load logged-in user
 const loggedUser = JSON.parse(localStorage.getItem('loggedInUser'));
@@ -204,105 +201,94 @@ if (!loggedUser) window.location.href = 'login.html';
 document.getElementById('userName').textContent = loggedUser.name;
 document.getElementById('userLevel').textContent = loggedUser.Level;
 
-// Get formatted date (YYYY-MM-DD)
-function getFormattedDate(d = new Date()) {
-  return d.toISOString().split('T')[0];
+// Format date to match Firestore: MM/DD/YYYY
+function getFormattedDateMMDDYYYY(d = new Date()) {
+    const mm = String(d.getMonth() + 1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
 }
-document.getElementById('currentDate').textContent = getFormattedDate();
+
+document.getElementById('currentDate').textContent = getFormattedDateMMDDYYYY();
 
 // Load current shift based on shift1.status or shift2.status
 async function loadCurrentShift() {
-  const today = getFormattedDate();
+    const today = getFormattedDateMMDDYYYY(); // "10/18/2025"
 
-  try {
-    const snapshot = await shiftsRef.where("date", "==", today).get();
+    try {
+        const snapshot = await dbShift.collection("shifts")
+                                      .where("date","==",today)
+                                      .get();
 
-    if (snapshot.empty) {
-      document.getElementById('currentShift').textContent = "None";
-      return;
+        if (snapshot.empty) {
+            document.getElementById('currentShift').textContent = "None";
+            return;
+        }
+
+        const data = snapshot.docs[0].data();
+        let shift = "None";
+
+        if (data.shift1?.status === "Open") {
+            shift = "Morning";
+        } else if (data.shift2?.status === "Open") {
+            shift = "Afternoon";
+        }
+
+        document.getElementById('currentShift').textContent = shift;
+
+    } catch(error) {
+        console.error("Error fetching shift:", error);
+        document.getElementById('currentShift').textContent = "Error";
     }
-
-    const data = snapshot.docs[0].data();
-    let shift = "None";
-
-    // Firestore fields are maps: shift1 and shift2
-    if (data.shift1?.status === "Open") {
-      shift = "Morning";
-    } else if (data.shift2?.status === "Open") {
-      shift = "Afternoon";
-    }
-
-    document.getElementById('currentShift').textContent = shift;
-  } catch (error) {
-    console.error("Error fetching shift:", error);
-    document.getElementById('currentShift').textContent = "Error";
-  }
 }
 
-// Cash Drawer - Print Preview Method
+// Cash Drawer - Print Preview
 document.getElementById("openDrawerBtn").addEventListener("click", function() {
-  const statusDiv = document.getElementById("drawerStatus");
-  const button = this;
+    const statusDiv = document.getElementById("drawerStatus");
+    const button = this;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
+    button.disabled = true;
 
-  // Show loading state
-  const originalText = button.innerHTML;
-  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
-  button.disabled = true;
+    try {
+        const printFrame = document.createElement("iframe");
+        printFrame.style.position = "absolute";
+        printFrame.style.left = "-9999px";
+        document.body.appendChild(printFrame);
 
-  try {
-    // Create a hidden iframe to generate print content
-    const printFrame = document.createElement("iframe");
-    printFrame.style.position = "absolute";
-    printFrame.style.left = "-9999px";
-    document.body.appendChild(printFrame);
+        const doc = printFrame.contentWindow.document;
+        doc.open();
+        doc.write(`
+          <html>
+            <head><title>Open Cash Drawer</title><style>body{font-family:monospace;}</style></head>
+            <body>
+              <pre class="drawer-command">\x1B\x70\x00\x19\xFA</pre>
+              <p>Click Print to open the cash drawer. Select your printer (EPSON TM88V11).</p>
+            </body>
+          </html>
+        `);
+        doc.close();
 
-    const doc = printFrame.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <html>
-        <head>
-          <title>Open Cash Drawer</title>
-          <style>
-            body { font-family: monospace; }
-            .drawer-command { display: none; }
-          </style>
-        </head>
-        <body>
-          <pre class="drawer-command">
-            \x1B\x70\x00\x19\xFA
-          </pre>
-          <p>Click Print to open the cash drawer. Select your printer (EPSON TM88V11).</p>
-        </body>
-      </html>
-    `);
-    doc.close();
+        printFrame.contentWindow.focus();
+        printFrame.contentWindow.print();
 
-    // Focus and open print dialog
-    printFrame.contentWindow.focus();
-    printFrame.contentWindow.print();
+        setTimeout(() => { document.body.removeChild(printFrame); }, 1000);
 
-    // Cleanup after short delay
-    setTimeout(() => {
-      document.body.removeChild(printFrame);
-    }, 1000);
+        statusDiv.innerHTML = '<div class="status-success">✅ Print preview opened. Choose your printer to open drawer.</div>';
+        setTimeout(() => { statusDiv.innerHTML = ''; }, 4000);
 
-    statusDiv.innerHTML = '<div class="status-success">✅ Print preview opened. Choose your printer to open drawer.</div>';
-    setTimeout(() => { statusDiv.innerHTML = ''; }, 4000);
-
-  } catch (err) {
-    console.error("Print preview error:", err);
-    statusDiv.innerHTML = `
-      <div class="status-error">
-        ❌ Could not open cash drawer automatically.
-        <div style="margin-top: 10px; font-size: 0.9em;">
-          Please use your printer's manual or print test receipt option.
-        </div>
-      </div>
-    `;
-  } finally {
-    button.innerHTML = originalText;
-    button.disabled = false;
-  }
+    } catch (err) {
+        console.error("Print preview error:", err);
+        statusDiv.innerHTML = `
+          <div class="status-error">
+            ❌ Could not open cash drawer automatically.
+            <div style="margin-top:10px;font-size:0.9em;">Please use your printer's manual or print test receipt option.</div>
+          </div>
+        `;
+    } finally {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
 });
 
 // Navigation
@@ -314,8 +300,8 @@ function goToShiftManagement() { window.location.href = 'dashboard.html'; }
 function goToCashierManagement() { window.location.href = 'cashiermanagement.html'; }
 function goToReprint() { window.location.href = 'reprint.html'; }
 function logout() {
-  localStorage.removeItem('loggedInUser');
-  window.location.href = 'login.html';
+    localStorage.removeItem('loggedInUser');
+    window.location.href = 'login.html';
 }
 
 // Initialize
